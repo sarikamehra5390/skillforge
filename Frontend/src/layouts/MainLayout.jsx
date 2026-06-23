@@ -2,12 +2,16 @@ import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import CheckInModal from "../components/CheckInModal";
+import CustomizeSanctuaryModal from "../components/CustomizeSanctuaryModal";
+import Companion from "../components/Companion";
 import useAppStore from "../store/useAppStore";
 import useAuthStore from "../store/useAuthStore";
+import useSanctuaryStore from "../store/useSanctuaryStore";
 
 function MainLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { showCheckInModal, setShowCheckInModal, checkMoodToday } = useAppStore();
+  const { fetchSettings } = useSanctuaryStore();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   useEffect(() => {
@@ -17,8 +21,9 @@ function MainLayout({ children }) {
           setShowCheckInModal(true);
         }
       });
+      fetchSettings();
     }
-  }, [isAuthenticated, checkMoodToday, setShowCheckInModal]);
+  }, [isAuthenticated, checkMoodToday, setShowCheckInModal, fetchSettings]);
 
   return (
     <div className="flex h-screen ambient-bg overflow-hidden font-sans selection:bg-primary-500/30">
@@ -56,6 +61,8 @@ function MainLayout({ children }) {
       </div>
 
       <CheckInModal isOpen={showCheckInModal} onClose={() => setShowCheckInModal(false)} />
+      <CustomizeSanctuaryModal />
+      <Companion />
     </div>
   );
 }

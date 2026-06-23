@@ -4,6 +4,7 @@ const skillRoutes = require("./routes/skillRoutes");
 const sessionRoutes = require("./routes/sessionRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const moodRoutes = require("./routes/moodRoutes");
+const sanctuaryRoutes = require("./routes/sanctuaryRoutes");
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -20,6 +21,7 @@ app.use("/api/skills", skillRoutes);
 app.use("/api/sessions", sessionRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/moods", moodRoutes);
+app.use("/api/sanctuary", sanctuaryRoutes);
 
 console.log("MONGO URI:", process.env.MONGO_URI);
 

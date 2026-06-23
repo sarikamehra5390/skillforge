@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bell, Search, Flame, Zap, Award } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 import useAppStore from '../store/useAppStore';
+import useSanctuaryStore from '../store/useSanctuaryStore';
 import { cn } from '../utils/cn';
 import Badge from './common/Badge';
 import { calculateXPProgress } from '../utils/gamification';
@@ -12,6 +13,7 @@ const Navbar = () => {
   const user = useAuthStore(state => state.user);
   const notifications = useAppStore(state => state.notifications);
   const fetchNotifications = useAppStore(state => state.fetchNotifications);
+  const { settings } = useSanctuaryStore();
   const xpProgress = user ? calculateXPProgress(user.xp) : { currentLevel: 1, currentXP: 0, xpNeeded: 100, progressPercentage: 0 };
   
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -88,9 +90,9 @@ const Navbar = () => {
               <p className="text-sm font-bold text-white italic tracking-tight">{user?.username}</p>
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Seeker</p>
             </div>
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-white font-black italic shadow-lg shadow-primary-500/10 border border-white/10 hover:scale-105 transition-transform">
-              {user?.username?.charAt(0).toUpperCase()}
-            </div>
+            <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${settings?.avatarColor || "from-primary-400 to-secondary-400"} flex items-center justify-center text-white font-black italic shadow-lg shadow-primary-500/10 border border-white/10 hover:scale-105 transition-transform`}>
+                {user?.username?.charAt(0).toUpperCase()}
+              </div>
           </div>
           <ProfileDropdown isOpen={showProfileDropdown} onClose={() => setShowProfileDropdown(false)} />
         </div>

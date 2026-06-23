@@ -15,15 +15,18 @@ import {
   BookOpen
 } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
+import useSanctuaryStore from '../store/useSanctuaryStore';
 import GlassCard from '../components/common/GlassCard';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import Illustration from '../components/common/Illustration';
+import CustomizeSanctuaryModal from '../components/CustomizeSanctuaryModal';
 import { calculateXPProgress, getTreeStage } from '../utils/gamification';
 import api from '../api/axios';
 
 const Profile = () => {
   const { user, logout } = useAuthStore();
+  const { setIsModalOpen } = useSanctuaryStore();
   const [stats, setStats] = useState({ totalSessions: 0, totalDuration: 0, totalSkills: 0 });
   const xpProgress = user ? calculateXPProgress(user.xp) : { currentLevel: 1, currentXP: 0, xpNeeded: 100, progressPercentage: 0 };
   const treeStage = user ? getTreeStage(user.xp) : { name: 'Seed', emoji: '🌱' };
@@ -140,7 +143,7 @@ const Profile = () => {
             </p>
 
             <div className="flex flex-wrap justify-center lg:justify-start gap-4">
-              <Button variant="outline" className="rounded-2xl px-8 py-4 border-white/10 hover:bg-white/5">
+              <Button variant="outline" className="rounded-2xl px-8 py-4 border-white/10 hover:bg-white/5" onClick={() => setIsModalOpen(true)}>
                 <Settings size={18} className="mr-2" />
                 Customize Sanctuary
               </Button>
@@ -237,6 +240,8 @@ const Profile = () => {
           </GlassCard>
         </div>
       </div>
+
+      <CustomizeSanctuaryModal />
     </div>
   );
 };
