@@ -1,9 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
+import CheckInModal from "../components/CheckInModal";
+import useAppStore from "../store/useAppStore";
+import useAuthStore from "../store/useAuthStore";
 
 function MainLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { showCheckInModal, setShowCheckInModal, checkMoodToday } = useAppStore();
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkMoodToday().then(({ hasCheckedInToday }) => {
+        if (!hasCheckedInToday) {
+          setShowCheckInModal(true);
+        }
+      });
+    }
+  }, [isAuthenticated, checkMoodToday, setShowCheckInModal]);
 
   return (
     <div className="flex h-screen ambient-bg overflow-hidden font-sans selection:bg-primary-500/30">
@@ -39,6 +54,8 @@ function MainLayout({ children }) {
           </div>
         </main>
       </div>
+
+      <CheckInModal isOpen={showCheckInModal} onClose={() => setShowCheckInModal(false)} />
     </div>
   );
 }

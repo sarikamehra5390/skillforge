@@ -22,10 +22,14 @@ import Badge from '../components/common/Badge';
 import Illustration from '../components/common/Illustration';
 import { Link } from 'react-router-dom';
 import { cn } from '../utils/cn';
+import { getTreeStage, calculateXPProgress } from '../utils/gamification';
 
 const Dashboard = () => {
   const { user } = useAuthStore();
   const { stats, recentActivity, loading, fetchDashboardData } = useDashboardStore();
+
+  const treeStage = user ? getTreeStage(user.xp) : { name: "Seed", emoji: "🌱" };
+  const xpProgress = user ? calculateXPProgress(user.xp) : { currentLevel: 1, currentXP: 0, xpNeeded: 100, progressPercentage: 0 };
 
   useEffect(() => {
     fetchDashboardData();
@@ -117,11 +121,11 @@ const Dashboard = () => {
               <GlassCard className="p-8 md:p-10 bg-forge-950/60 backdrop-blur-xl border-warm-amber/20 shadow-2xl rotate-3 group-hover:rotate-0 transition-all duration-700">
                 <div className="flex items-center gap-6">
                   <div className="w-20 md:w-24 h-20 md:h-24 rounded-[2.5rem] bg-gradient-to-br from-warm-amber to-primary-400 flex items-center justify-center text-4xl md:text-5xl shadow-lg">
-                    🌳
+                    {treeStage.emoji}
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">Growth Stage</p>
-                    <p className="text-2xl md:text-3xl font-bold text-white italic tracking-tight">Young Tree</p>
+                    <p className="text-2xl md:text-3xl font-bold text-white italic tracking-tight">{treeStage.name}</p>
                     <p className="text-sm text-slate-400 mt-1">{stats.totalSkills} branches, {stats.totalSessions} waterings</p>
                   </div>
                 </div>
@@ -237,27 +241,27 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Tree Age</p>
-                  <p className="text-4xl font-bold text-white italic tracking-tighter">Lvl {user?.level}</p>
+                  <p className="text-4xl font-bold text-white italic tracking-tighter">Lvl {xpProgress.currentLevel}</p>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em]">
                   <span className="text-slate-500">Growth Progress</span>
-                  <span className="text-warm-amber">{Math.round(((user?.xp || 0) % 500) / 5)}%</span>
+                  <span className="text-warm-amber">{xpProgress.currentXP} / {xpProgress.xpNeeded} XP</span>
                 </div>
                 <div className="h-3 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
                   <div
                     className="h-full bg-gradient-to-r from-warm-amber via-primary-400 to-warm-amber rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(251,191,36,0.3)]"
-                    style={{ width: `${((user?.xp || 0) % 500) / 5}%` }}
+                    style={{ width: `${xpProgress.progressPercentage}%` }}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-6">
                 <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                  <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Sunlight</p>
-                  <p className="text-xl font-bold text-white">{user?.xp}</p>
+                  <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Total Sunlight</p>
+                  <p className="text-xl font-bold text-white">{user?.xp || 0}</p>
                 </div>
                 <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
                   <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Branches</p>

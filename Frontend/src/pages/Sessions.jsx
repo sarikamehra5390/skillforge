@@ -6,7 +6,10 @@ import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import GlassCard from '../components/common/GlassCard';
 import Illustration from '../components/common/Illustration';
+import XPPopup from '../components/XPPopup';
+import useAuthStore from '../store/useAuthStore';
 import { toast } from 'sonner';
+import { AnimatePresence } from 'framer-motion';
 
 const Sessions = () => {
   const [sessions, setSessions] = useState([]);
@@ -15,6 +18,9 @@ const Sessions = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [newSession, setNewSession] = useState({ skillId: '', duration: '', notes: '' });
+  const [showXPPopup, setShowXPPopup] = useState(false);
+  const [xpGained, setXpGained] = useState(0);
+  const { user, updateUser } = useAuthStore();
 
   const fetchData = async () => {
     try {
@@ -46,10 +52,32 @@ const Sessions = () => {
       });
       
       toast.success(`A beautiful ritual. +${response.data.xpGained} XP`, { icon: '🌱' });
+      
+      // Update user in store
+      updateUser({
+        xp: response.data.session.xpGained + (user?.xp || 0),
+        level: response.data.newLevel,
+        streak: response.data.newStreak
+      });
+
+      // Show XP Popup
+      setXpGained(response.data.xpGained);
+      setShowXPPopup(true);
+
       if (response.data.levelUp) {
         toast.success(`You have evolved! Level ${response.data.newLevel}`, {
           icon: '🦋',
           duration: 6000
+        });
+      }
+
+      // Check for new achievements
+      if (response.data.newUnlockedAchievements) {
+        response.data.newUnlockedAchievements.forEach(achievement => {
+          toast.success(`Achievement Unlocked: ${achievement.title}!`, {
+            icon: '🏆',
+            duration: 5000
+          });
         });
       }
       
@@ -218,6 +246,15 @@ const Sessions = () => {
           </GlassCard>
         </div>
       )}
+
+      <AnimatePresence>
+        {showXPPopup && (
+          <XPPopup
+            xp={xpGained}
+            onComplete={() => setShowXPPopup(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

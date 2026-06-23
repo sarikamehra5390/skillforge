@@ -2,7 +2,9 @@ const express = require("express");
 const Session = require("../models/Session");
 const Skill = require("../models/Skill");
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 const auth = require("../middleware/auth");
+const { calculateLevel, calculateCurrentStreak, ACHIEVEMENTS } = require("../utils/gamification");
 const router = express.Router();
 
 // Get all sessions for current user
@@ -24,8 +26,8 @@ router.post("/", auth, async (req, res) => {
     const skill = await Skill.findOne({ _id: skillId, userId: req.user._id });
     if (!skill) return res.status(404).json({ message: "Skill not found" });
 
-    // Calculate XP: 1 XP per minute + bonus for longer sessions
-    const xpGained = Math.floor(duration * 1.5);
+    // XP formula: 1 XP per 1 minute
+    const xpGained = duration;
     
     const session = new Session({
       userId: req.user._id,
@@ -45,41 +47,63 @@ router.post("/", auth, async (req, res) => {
     skill.progress = Math.min(100, skill.progress + 2);
     await skill.save();
 
-    // Update User XP and Level
+    // Update User
     const user = req.user;
     user.xp += xpGained;
+    const oldLevel = user.level;
     
-    // Level up logic: every 500 XP = 1 level
-    const newLevel = Math.floor(user.xp / 500) + 1;
-    if (newLevel > user.level) {
-      user.level = newLevel;
+    // Calculate new level
+    const newLevel = calculateLevel(user.xp);
+    user.level = newLevel;
+
+    // Get all user sessions to calculate streak
+    const allSessions = await Session.find({ userId: user._id });
+    const newStreak = calculateCurrentStreak(allSessions);
+    user.streak = newStreak;
+    user.lastPracticeDate = new Date();
+
+    // Update longest streak
+    if (user.streak > (user.longestStreak || 0)) {
+      user.longestStreak = user.streak;
     }
 
-    // Streak logic
-    const today = new Date().setHours(0, 0, 0, 0);
-    const lastDate = user.lastPracticeDate ? new Date(user.lastPracticeDate).setHours(0, 0, 0, 0) : null;
-    
-    if (!lastDate) {
-      user.streak = 1;
-    } else if (today === lastDate) {
-      // Already practiced today, streak remains same
-    } else if (today - lastDate === 86400000) {
-      // Practiced yesterday, increment streak
-      user.streak += 1;
-    } else {
-      // Streak broken
-      user.streak = 1;
-    }
-    
-    user.lastPracticeDate = new Date();
+    // Check for new achievements to unlock
+    const newUnlockedAchievements = [];
+    ACHIEVEMENTS.forEach(achievement => {
+      if (user.xp >= achievement.xpRequired && !user.unlockedAchievements.includes(achievement.id)) {
+        user.unlockedAchievements.push(achievement.id);
+        newUnlockedAchievements.push(achievement);
+      }
+    });
+
     await user.save();
+
+    // Create notifications
+    if (newLevel > oldLevel) {
+      await Notification.create({
+        userId: user._id,
+        title: "Level Up!",
+        message: `You reached Level ${newLevel}!`,
+        type: "levelup"
+      });
+    }
+
+    for (const achievement of newUnlockedAchievements) {
+      await Notification.create({
+        userId: user._id,
+        title: "Achievement Unlocked!",
+        message: achievement.title,
+        type: "achievement"
+      });
+    }
 
     res.status(201).json({
       session: newSession,
       xpGained,
-      levelUp: newLevel > user.level - 1,
+      levelUp: newLevel > oldLevel,
       newLevel: user.level,
-      newStreak: user.streak
+      newStreak: user.streak,
+      newUnlockedAchievements
     });
   } catch (error) {
     console.error("POST SESSION ERROR:", error);

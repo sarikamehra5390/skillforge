@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Mail, 
@@ -10,16 +10,90 @@ import {
   Calendar,
   Settings,
   LogOut,
-  Camera
+  Camera,
+  Timer,
+  BookOpen
 } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 import GlassCard from '../components/common/GlassCard';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import Illustration from '../components/common/Illustration';
+import { calculateXPProgress, getTreeStage } from '../utils/gamification';
+import api from '../api/axios';
 
 const Profile = () => {
   const { user, logout } = useAuthStore();
+  const [stats, setStats] = useState({ totalSessions: 0, totalDuration: 0, totalSkills: 0 });
+  const xpProgress = user ? calculateXPProgress(user.xp) : { currentLevel: 1, currentXP: 0, xpNeeded: 100, progressPercentage: 0 };
+  const treeStage = user ? getTreeStage(user.xp) : { name: 'Seed', emoji: '🌱' };
+
+  const fetchStats = async () => {
+    try {
+      const [sessionsRes, skillsRes] = await Promise.all([
+        api.get('/sessions'),
+        api.get('/skills')
+      ]);
+      
+      const totalDuration = sessionsRes.data.reduce((sum, s) => sum + s.duration, 0);
+      setStats({
+        totalSessions: sessionsRes.data.length,
+        totalDuration,
+        totalSkills: skillsRes.data.length
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const statCards = [
+    { 
+      icon: Zap, 
+      label: 'Current Level', 
+      value: xpProgress.currentLevel, 
+      color: 'text-primary-400', 
+      bg: 'bg-primary-400/10' 
+    },
+    { 
+      icon: Flame, 
+      label: 'Current Streak', 
+      value: user?.streak || 0, 
+      color: 'text-warm-amber', 
+      bg: 'bg-warm-amber/10' 
+    },
+    { 
+      icon: Flame, 
+      label: 'Longest Streak', 
+      value: user?.longestStreak || 0, 
+      color: 'text-orange-400', 
+      bg: 'bg-orange-400/10' 
+    },
+    { 
+      icon: Timer, 
+      label: 'Total Practice', 
+      value: `${Math.floor(stats.totalDuration / 60)}h ${stats.totalDuration % 60}m`, 
+      color: 'text-blue-400', 
+      bg: 'bg-blue-400/10' 
+    },
+    { 
+      icon: BookOpen, 
+      label: 'Total Sessions', 
+      value: stats.totalSessions, 
+      color: 'text-green-400', 
+      bg: 'bg-green-400/10' 
+    },
+    { 
+      icon: Award, 
+      label: 'Achievements', 
+      value: user?.unlockedAchievements?.length || 0, 
+      color: 'text-purple-400', 
+      bg: 'bg-purple-400/10' 
+    }
+  ];
 
   return (
     <div className="space-y-16 pb-24 relative">
@@ -41,11 +115,12 @@ const Profile = () => {
               </div>
               {/* Level Badge Overlay */}
               <div className="absolute -top-4 -left-4 px-6 py-2 rounded-2xl bg-white backdrop-blur-xl border border-white/20 text-forge-950 font-black italic shadow-2xl rotate-[-6deg]">
-                LVL {user?.level}
+                LVL {xpProgress.currentLevel}
               </div>
             </div>
-            <div className="relative w-48 h-48">
-              <Illustration name="growthTree" className="w-full h-full opacity-70" />
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-warm-amber/10 border border-warm-amber/20">
+              <span className="text-2xl">{treeStage.emoji}</span>
+              <span className="text-sm font-black text-warm-amber uppercase tracking-widest">{treeStage.name}</span>
             </div>
           </div>
 
@@ -78,8 +153,27 @@ const Profile = () => {
         </div>
       </section>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {statCards.map((card, index) => {
+          const Icon = card.icon;
+          return (
+            <GlassCard key={index} className="p-8 border-white/5 bg-white/[0.01] hover:border-white/10 transition-all">
+              <div className="flex items-center gap-4">
+                <div className={`p-4 rounded-2xl ${card.bg}`}>
+                  <Icon size={24} className={card.color} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">{card.label}</p>
+                  <p className="text-2xl font-bold text-white italic">{card.value}</p>
+                </div>
+              </div>
+            </GlassCard>
+          );
+        })}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Left Column: Progress & Stats */}
+        {/* Left Column: Progress */}
         <div className="lg:col-span-2 space-y-10">
           <GlassCard className="p-10 border-white/5 bg-white/[0.01]">
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
@@ -90,54 +184,25 @@ const Profile = () => {
               <div className="flex justify-between items-end">
                 <div>
                   <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">Current Presence</p>
-                  <p className="text-4xl font-bold text-white italic tracking-tighter">Level {user?.level}</p>
+                  <p className="text-4xl font-bold text-white italic tracking-tighter">Level {xpProgress.currentLevel}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">Next Horizon</p>
-                  <p className="text-4xl font-bold text-slate-700 italic tracking-tighter">Level {user?.level + 1}</p>
+                  <p className="text-4xl font-bold text-slate-700 italic tracking-tighter">Level {xpProgress.currentLevel + 1}</p>
                 </div>
               </div>
-              <div className="relative h-2 bg-white/[0.03] rounded-full overflow-hidden border border-white/5">
+              <div className="relative h-3 bg-white/[0.03] rounded-full overflow-hidden border border-white/5">
                 <div 
                   className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary-400 via-secondary-400 to-primary-400 rounded-full transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(167,139,250,0.2)]"
-                  style={{ width: `${((user?.xp || 0) % 500) / 5}%` }}
+                  style={{ width: `${xpProgress.progressPercentage}%` }}
                 />
               </div>
               <div className="flex justify-between text-[10px] font-bold uppercase tracking-[0.2em]">
-                <span className="text-primary-300">{(user?.xp || 0) % 500} XP Nurtured</span>
-                <span className="text-slate-600">{500 - ((user?.xp || 0) % 500)} XP to Unfold</span>
+                <span className="text-primary-300">{xpProgress.currentXP} XP Nurtured</span>
+                <span className="text-slate-600">{xpProgress.xpNeeded} XP to Unfold</span>
               </div>
             </div>
           </GlassCard>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            <GlassCard className="p-10 group border-white/5 bg-white/[0.01]">
-              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-8 italic">Ritual Consistency</h3>
-              <div className="flex items-center gap-10">
-                <div className="w-24 h-24 rounded-[2rem] border-2 border-primary-500/20 flex items-center justify-center group-hover:border-primary-400 transition-colors duration-700 relative">
-                   <div className="absolute inset-0 bg-primary-400/5 rounded-[2rem] blur-md" />
-                   <span className="text-3xl font-bold text-white italic relative z-10">92%</span>
-                </div>
-                <div>
-                  <p className="text-white font-bold tracking-tight italic">Radiant Path</p>
-                  <p className="text-xs text-slate-500 font-medium mt-2 leading-relaxed">28 of the last 30 sunrises spent in mastery.</p>
-                </div>
-              </div>
-            </GlassCard>
-            <GlassCard className="p-10 group border-white/5 bg-white/[0.01]">
-              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-8 italic">Temporal Harvest</h3>
-              <div className="flex items-center gap-10">
-                <div className="w-24 h-24 rounded-[2rem] border-2 border-secondary-500/20 flex items-center justify-center group-hover:border-secondary-400 transition-colors duration-700 relative">
-                   <div className="absolute inset-0 bg-secondary-400/5 rounded-[2rem] blur-md" />
-                   <span className="text-3xl font-bold text-white italic relative z-10">45h</span>
-                </div>
-                <div>
-                  <p className="text-white font-bold tracking-tight italic">Rich Harvest</p>
-                  <p className="text-xs text-slate-500 font-medium mt-2 leading-relaxed">Cumulative hours of life given to your skills.</p>
-                </div>
-              </div>
-            </GlassCard>
-          </div>
         </div>
 
         {/* Right Column: Achievements & Badges */}
@@ -145,7 +210,6 @@ const Profile = () => {
           <GlassCard className="p-10 border-white/5 bg-white/[0.01]">
             <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-10 flex items-center justify-between italic">
               Collection
-              <Button variant="ghost" size="sm" className="text-[10px] h-7 px-4 rounded-full border border-white/5">archive</Button>
             </h3>
             <div className="grid grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (

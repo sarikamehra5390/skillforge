@@ -7,6 +7,7 @@ import api from '../api/axios';
 import { cn } from '../utils/cn';
 import Illustration from '../components/common/Illustration';
 import { toast } from 'sonner';
+import { ACHIEVEMENTS as XP_ACHIEVEMENTS } from '../utils/gamification';
 
 const ACHIEVEMENTS = [
   {
@@ -74,7 +75,18 @@ const ACHIEVEMENTS = [
     rarity: "Epic",
     xp: 1000,
     requirement: (stats) => stats.streak >= 7
-  }
+  },
+  ...XP_ACHIEVEMENTS.map((ach, idx) => ({
+    id: `xp-${ach.id}`,
+    title: ach.title,
+    description: ach.description,
+    icon: () => <span className="text-2xl">{ach.emoji || "⭐"}</span>,
+    color: "text-primary-400",
+    bg: "bg-primary-400/10",
+    rarity: idx === XP_ACHIEVEMENTS.length - 1 ? "Legendary" : idx > 2 ? "Epic" : idx > 0 ? "Rare" : "Common",
+    xp: ach.xpRequired,
+    requirement: (stats) => stats.totalXP >= ach.xpRequired
+  }))
 ];
 
 const Achievements = () => {
@@ -85,7 +97,8 @@ const Achievements = () => {
     streak: 0,
     maxDuration: 0,
     totalSkills: 0,
-    level: 1
+    level: 1,
+    totalXP: 0
   });
 
   useEffect(() => {
@@ -104,7 +117,8 @@ const Achievements = () => {
           streak: user?.streak || 0,
           maxDuration: sessions.length > 0 ? Math.max(...sessions.map(s => s.duration)) : 0,
           totalSkills: skills.length,
-          level: user?.level || 1
+          level: user?.level || 1,
+          totalXP: user?.xp || 0
         });
         setLoading(false);
       } catch (error) {
@@ -201,7 +215,7 @@ const Achievements = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {ACHIEVEMENTS.map((achievement) => {
           const isUnlocked = achievement.requirement(stats);
-          const Icon = achievement.icon;
+          const Icon = typeof achievement.icon === 'function' ? achievement.icon : achievement.icon;
 
           return (
             <GlassCard 
@@ -219,7 +233,7 @@ const Achievements = () => {
                   {isUnlocked ? (
                     <>
                       <div className="absolute inset-0 bg-white/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <Icon className={cn("w-10 h-10 relative z-10", achievement.color)} />
+                      {typeof Icon === 'function' ? <Icon /> : <Icon className={cn("w-10 h-10 relative z-10", achievement.color)} />}
                     </>
                   ) : (
                     <Lock className="w-8 h-8 text-slate-700" />

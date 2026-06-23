@@ -28,12 +28,23 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    longestStreak: {
+      type: Number,
+      default: 0
+    },
     lastPracticeDate: {
       type: Date,
     },
+    lastCheckIn: {
+      type: Date
+    },
     avatar: {
       type: String,
-    }
+    },
+    unlockedAchievements: [{
+      type: String,
+      default: []
+    }]
   },
   {
     timestamps: true,

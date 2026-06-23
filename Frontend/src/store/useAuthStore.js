@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import api from '../api/axios';
 
-const useAuthStore = create((set) => ({
+const useAuthStore = create((set, get) => ({
   user: null,
   token: localStorage.getItem('token'),
   isAuthenticated: !!localStorage.getItem('token'),
@@ -63,6 +63,11 @@ const useAuthStore = create((set) => ({
       set({ user: null, token: null, isAuthenticated: false, loading: false });
     }
   },
+
+  updateUser: (updates) => {
+    const user = get().user;
+    set({ user: { ...user, ...updates } });
+  }
 }));
 
 export default useAuthStore;
