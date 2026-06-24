@@ -11,6 +11,8 @@ const useDashboardStore = create((set) => ({
     xp: 0
   },
   recentActivity: [],
+  skills: [],
+  sessions: [],
   loading: false,
   error: null,
 
@@ -35,6 +37,8 @@ const useDashboardStore = create((set) => ({
           xp: userRes.data.xp
         },
         recentActivity: sessionsRes.data.slice(0, 5),
+        skills: skillsRes.data,
+        sessions: sessionsRes.data,
         loading: false
       });
     } catch (error) {

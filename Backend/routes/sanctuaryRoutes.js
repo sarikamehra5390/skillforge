@@ -19,6 +19,22 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
+// Get public sanctuary settings for a user
+router.get("/:userId", auth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    let settings = await SanctuarySettings.findOne({ userId });
+    if (!settings) {
+      // Return default settings if none exist
+      settings = new SanctuarySettings({ userId });
+    }
+    res.json(settings);
+  } catch (error) {
+    console.error("GET public sanctuary settings error:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Update sanctuary settings
 router.put("/", auth, async (req, res) => {
   try {

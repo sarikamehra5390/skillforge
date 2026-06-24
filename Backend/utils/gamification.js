@@ -9,13 +9,20 @@ const LEVEL_THRESHOLDS = [
 ];
 
 const TREE_STAGES = [
-  { xp: 0, name: "Seed", emoji: "🌱" },
-  { xp: 100, name: "Sprout", emoji: "🌿" },
-  { xp: 250, name: "Sapling", emoji: "🌳" },
-  { xp: 500, name: "Young Tree", emoji: "🌳" },
-  { xp: 1000, name: "Flourishing Tree", emoji: "🌲" },
-  { xp: 2500, name: "Ancient Tree", emoji: "🌲" },
-  { xp: 5000, name: "World Tree", emoji: "🪴" }
+  { xp: 0, name: "Seed", emoji: "🌱", stage: 1 },
+  { xp: 100, name: "Sprout", emoji: "🌿", stage: 2 },
+  { xp: 250, name: "Young Tree", emoji: "🌳", stage: 3 },
+  { xp: 500, name: "Flourishing Tree", emoji: "🌲", stage: 4 },
+  { xp: 1000, name: "Blooming Tree", emoji: "🌸", stage: 5 },
+  { xp: 2500, name: "Ancient Tree", emoji: "✨", stage: 6 },
+  { xp: 5000, name: "World Tree", emoji: "🌎", stage: 7 }
+];
+
+const FRUIT_MILESTONES = [
+  { level: 5, fruit: "🍎", name: "Apple" },
+  { level: 10, fruit: "🍊", name: "Orange" },
+  { level: 15, fruit: "🍑", name: "Peach" },
+  { level: 20, fruit: "✨", name: "Golden Fruit" }
 ];
 
 const ACHIEVEMENTS = [
@@ -24,6 +31,13 @@ const ACHIEVEMENTS = [
   { id: "dedicated-learner", xpRequired: 1000, title: "Dedicated Learner", description: "Reach 1000 XP" },
   { id: "forest-keeper", xpRequired: 2500, title: "Forest Keeper", description: "Reach 2500 XP" },
   { id: "world-tree-guardian", xpRequired: 5000, title: "World Tree Guardian", description: "Reach 5000 XP" }
+];
+
+const SEASONS = [
+  { id: "spring", name: "Spring", color: "text-pink-400", leafColor: "#f9a8d4" },
+  { id: "summer", name: "Summer", color: "text-green-400", leafColor: "#4ade80" },
+  { id: "autumn", name: "Autumn", color: "text-orange-400", leafColor: "#fb923c" },
+  { id: "winter", name: "Winter", color: "text-blue-200", leafColor: "#bfdbfe" }
 ];
 
 const calculateLevel = (xp) => {
@@ -110,12 +124,28 @@ const calculateCurrentStreak = (sessions) => {
   return streak;
 };
 
+const getEarnedFruits = (level) => {
+  return FRUIT_MILESTONES.filter(milestone => level >= milestone.level);
+};
+
+const getCurrentSeason = () => {
+  const month = new Date().getMonth();
+  if (month >= 2 && month <= 4) return SEASONS[0]; // Spring
+  if (month >= 5 && month <= 7) return SEASONS[1]; // Summer
+  if (month >= 8 && month <= 10) return SEASONS[2]; // Autumn
+  return SEASONS[3]; // Winter
+};
+
 module.exports = {
   LEVEL_THRESHOLDS,
   TREE_STAGES,
+  FRUIT_MILESTONES,
   ACHIEVEMENTS,
+  SEASONS,
   calculateLevel,
   calculateXPProgress,
   getTreeStage,
-  calculateCurrentStreak
+  calculateCurrentStreak,
+  getEarnedFruits,
+  getCurrentSeason
 };

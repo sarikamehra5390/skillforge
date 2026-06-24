@@ -10,7 +10,10 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Users,
+  Search,
+  Sprout
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import useAuthStore from '../store/useAuthStore';
@@ -25,6 +28,9 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     { icon: History, label: 'Ritual Journal', path: '/sessions' },
     { icon: BarChart3, label: 'Growth Journey', path: '/analytics' },
     { icon: Trophy, label: 'Milestones', path: '/achievements' },
+    { icon: Users, label: 'Friends', path: '/friends' },
+    { icon: Search, label: 'Find Friends', path: '/search' },
+    { icon: Sprout, label: 'Community Garden', path: '/garden' },
     { icon: User, label: 'Self', path: '/profile' },
   ];
 

@@ -9,6 +9,10 @@ import Achievements from "./pages/Achievements";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Friends from "./pages/Friends";
+import Search from "./pages/Search";
+import FriendProfile from "./pages/FriendProfile";
+import CommunityGarden from "./pages/CommunityGarden";
 
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./components/common/ProtectedRoute";
@@ -69,6 +73,38 @@ function App() {
             element={
               <MainLayout>
                 <Profile />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/friends"
+            element={
+              <MainLayout>
+                <Friends />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/search"
+            element={
+              <MainLayout>
+                <Search />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/friend/:friendId"
+            element={
+              <MainLayout>
+                <FriendProfile />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/garden"
+            element={
+              <MainLayout>
+                <CommunityGarden />
               </MainLayout>
             }
           />

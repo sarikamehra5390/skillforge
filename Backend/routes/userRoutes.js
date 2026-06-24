@@ -118,4 +118,47 @@ router.get("/profile", auth, async (req, res) => {
   });
 });
 
+// Search users
+router.get("/search", auth, async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query) {
+      return res.status(400).json({ message: "Search query is required" });
+    }
+
+    const users = await User.find({
+      $and: [
+        { _id: { $ne: req.user._id } },
+        {
+          $or: [
+            { username: { $regex: query, $options: "i" } },
+            { email: { $regex: query, $options: "i" } },
+            { displayName: { $regex: query, $options: "i" } },
+          ],
+        },
+      ],
+    }).select("-password");
+
+    res.json(users);
+  } catch (error) {
+    console.error("Search users error:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get public user profile
+router.get("/:userId", auth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error("Get public profile error:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

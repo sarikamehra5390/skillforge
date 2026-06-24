@@ -3,6 +3,7 @@ const Session = require("../models/Session");
 const Skill = require("../models/Skill");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
+const Activity = require("../models/Activity");
 const auth = require("../middleware/auth");
 const { calculateLevel, calculateCurrentStreak, ACHIEVEMENTS } = require("../utils/gamification");
 const router = express.Router();
@@ -86,6 +87,13 @@ router.post("/", auth, async (req, res) => {
         message: `You reached Level ${newLevel}!`,
         type: "levelup"
       });
+      // Create activity for level up
+      await Activity.create({
+        userId: user._id,
+        type: "level",
+        description: `${user.username} reached Level ${newLevel}!`,
+        metadata: { level: newLevel },
+      });
     }
 
     for (const achievement of newUnlockedAchievements) {
@@ -94,6 +102,31 @@ router.post("/", auth, async (req, res) => {
         title: "Achievement Unlocked!",
         message: achievement.title,
         type: "achievement"
+      });
+      // Create activity for achievement
+      await Activity.create({
+        userId: user._id,
+        type: "achievement",
+        description: `${user.username} unlocked ${achievement.title}!`,
+        metadata: { achievement },
+      });
+    }
+
+    // Create activity for session
+    await Activity.create({
+      userId: user._id,
+      type: "session",
+      description: `${user.username} practiced ${skill.name} for ${duration} minutes!`,
+      metadata: { skillId, skillName: skill.name, duration },
+    });
+
+    // If it's a streak milestone
+    if (newStreak > 0 && newStreak % 7 === 0) {
+      await Activity.create({
+        userId: user._id,
+        type: "streak",
+        description: `${user.username} reached a ${newStreak} day streak!`,
+        metadata: { streak: newStreak },
       });
     }
 

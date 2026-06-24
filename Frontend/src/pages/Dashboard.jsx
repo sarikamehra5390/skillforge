@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Plus,
   Trophy,
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import useDashboardStore from '../store/useDashboardStore';
 import useAuthStore from '../store/useAuthStore';
+import useFriendsStore from '../store/useFriendsStore';
 import StatCard from '../components/dashboard/StatCard';
 import RecentActivity from '../components/dashboard/RecentActivity';
 import GlassCard from '../components/common/GlassCard';
@@ -20,20 +21,24 @@ import Button from '../components/common/Button';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import Badge from '../components/common/Badge';
 import Illustration from '../components/common/Illustration';
+import LivingTree from '../components/LivingTree';
 import { Link } from 'react-router-dom';
 import { cn } from '../utils/cn';
 import { getTreeStage, calculateXPProgress } from '../utils/gamification';
 
 const Dashboard = () => {
   const { user } = useAuthStore();
-  const { stats, recentActivity, loading, fetchDashboardData } = useDashboardStore();
+  const { stats, recentActivity, loading, fetchDashboardData, skills, sessions } = useDashboardStore();
+  const { activityFeed, fetchActivityFeed } = useFriendsStore();
+  const [isWatering, setIsWatering] = useState(false);
 
   const treeStage = user ? getTreeStage(user.xp) : { name: "Seed", emoji: "🌱" };
   const xpProgress = user ? calculateXPProgress(user.xp) : { currentLevel: 1, currentXP: 0, xpNeeded: 100, progressPercentage: 0 };
 
   useEffect(() => {
     fetchDashboardData();
-  }, [fetchDashboardData]);
+    fetchActivityFeed();
+  }, [fetchDashboardData, fetchActivityFeed]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -67,11 +72,9 @@ const Dashboard = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-forge-900/60 via-forge-950/40 to-forge-950" />
         
         {/* Tree Illustration (visible md+) */}
-        <div className="relative hidden md:block">
-          <Illustration name="treeOfMastery" className="w-full h-auto" />
-          
+        <div className="relative">
           {/* Overlay Content */}
-          <div className="absolute inset-0 flex flex-col md:flex-row items-center justify-between p-16 md:p-24">
+          <div className="flex flex-col md:flex-row items-center justify-between p-8 md:p-16">
             {/* Left: Greeting & Text */}
             <div className="relative z-10 max-w-lg space-y-8 text-center md:text-left">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
@@ -102,7 +105,14 @@ const Dashboard = () => {
 
               <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-2">
                 <Link to="/sessions">
-                  <Button size="lg" className="rounded-2xl px-8 py-4 shadow-xl shadow-warm-amber/20 bg-gradient-to-r from-warm-amber to-primary-400 hover:from-warm-amber/90 hover:to-primary-400/90 group/btn">
+                  <Button 
+                    size="lg" 
+                    className="rounded-2xl px-8 py-4 shadow-xl shadow-warm-amber/20 bg-gradient-to-r from-warm-amber to-primary-400 hover:from-warm-amber/90 hover:to-primary-400/90 group/btn"
+                    onClick={() => {
+                      setIsWatering(true);
+                      setTimeout(() => setIsWatering(false), 2000);
+                    }}
+                  >
                     <Plus size={18} className="mr-2 group-hover/btn:rotate-90 transition-transform duration-500" />
                     Water Your Tree
                   </Button>
@@ -116,20 +126,14 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Right: Growth Stage Card */}
-            <div className="relative z-10 mt-12 md:mt-0">
-              <GlassCard className="p-8 md:p-10 bg-forge-950/60 backdrop-blur-xl border-warm-amber/20 shadow-2xl rotate-3 group-hover:rotate-0 transition-all duration-700">
-                <div className="flex items-center gap-6">
-                  <div className="w-20 md:w-24 h-20 md:h-24 rounded-[2.5rem] bg-gradient-to-br from-warm-amber to-primary-400 flex items-center justify-center text-4xl md:text-5xl shadow-lg">
-                    {treeStage.emoji}
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">Growth Stage</p>
-                    <p className="text-2xl md:text-3xl font-bold text-white italic tracking-tight">{treeStage.name}</p>
-                    <p className="text-sm text-slate-400 mt-1">{stats.totalSkills} branches, {stats.totalSessions} waterings</p>
-                  </div>
-                </div>
-              </GlassCard>
+            {/* Right: Living Tree */}
+            <div className="relative z-10 mt-12 md:mt-0 flex-1 max-w-md">
+              <LivingTree 
+                user={user} 
+                skills={skills} 
+                sessions={sessions} 
+                isWatering={isWatering} 
+              />
             </div>
           </div>
         </div>
@@ -224,6 +228,32 @@ const Dashboard = () => {
             </div>
             <RecentActivity activities={recentActivity} />
           </section>
+
+          {/* Community Activity */}
+          {activityFeed.length > 0 && (
+            <section>
+              <div className="flex items-center justify-between mb-8 px-4">
+                <h3 className="text-2xl font-bold text-white italic">Community Activity</h3>
+              </div>
+              <div className="space-y-4">
+                {activityFeed.map((activity) => (
+                  <GlassCard key={activity._id} className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-white font-bold italic">
+                        {activity.userId?.username?.[0]?.toUpperCase() || "?"}
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">{activity.description}</p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {new Date(activity.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </GlassCard>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
 
         <div className="space-y-12">

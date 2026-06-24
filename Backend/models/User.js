@@ -12,6 +12,9 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    displayName: {
+      type: String,
+    },
     password: {
       type: String,
       required: true,
@@ -44,7 +47,11 @@ const userSchema = new mongoose.Schema(
     unlockedAchievements: [{
       type: String,
       default: []
-    }]
+    }],
+    gardenId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CommunityGarden",
+    },
   },
   {
     timestamps: true,
