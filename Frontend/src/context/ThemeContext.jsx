@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { THEME_OPTIONS } from "../utils/sanctuary";
 import useAuthStore from "../store/useAuthStore";
-import api from "../api/axios";
+import useSanctuaryStore from "../store/useSanctuaryStore";
+import { loadSanctuaryFromStorage } from "../utils/sanctuaryStorage";
 
 // Define all theme configurations with CSS variables
 const THEMES = {
@@ -158,58 +159,46 @@ const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
   const { user } = useAuthStore();
+  const settings = useSanctuaryStore((state) => state.settings);
+  const updateSettings = useSanctuaryStore((state) => state.updateSettings);
   const [currentTheme, setCurrentTheme] = useState("classic");
 
-  // Apply theme to document root
   const applyTheme = (themeId) => {
     if (!THEMES[themeId]) return;
 
     const root = document.documentElement;
     const theme = THEMES[themeId];
-    
+
     Object.entries(theme.css).forEach(([key, value]) => {
       root.style.setProperty(key, value);
     });
 
-    // Set transition duration to 600ms as requested
     root.style.transition = "all 600ms ease-in-out";
   };
 
-  // Load theme from localStorage or user data on mount
-  useEffect(() => {
-    let savedTheme = localStorage.getItem("skillforge_theme");
-    
-    if (user && user.sanctuarySettings && user.sanctuarySettings.theme) {
-      savedTheme = user.sanctuarySettings.theme;
-    }
-    
-    if (savedTheme && THEMES[savedTheme]) {
-      setCurrentTheme(savedTheme);
-      applyTheme(savedTheme);
-    } else {
-      // Apply default theme if no saved theme
-      applyTheme("sunset-garden");
-    }
-  }, [user]);
+  const resolveTheme = () => {
+    return (
+      settings?.theme ||
+      user?.sanctuarySettings?.theme ||
+      loadSanctuaryFromStorage()?.theme ||
+      "classic"
+    );
+  };
 
-  // Change theme and persist
-  const changeTheme = async (themeId) => {
+  useEffect(() => {
+    const themeId = resolveTheme();
+    if (THEMES[themeId]) {
+      setCurrentTheme(themeId);
+      applyTheme(themeId);
+    }
+  }, [user, settings?.theme]);
+
+  const changeTheme = (themeId) => {
     if (!THEMES[themeId]) return;
-    
+
     setCurrentTheme(themeId);
     applyTheme(themeId);
-    localStorage.setItem("skillforge_theme", themeId);
-    
-    // Save to backend if user is logged in
-    if (user) {
-      try {
-        await api.put("/sanctuary", {
-          theme: themeId,
-        });
-      } catch (error) {
-        console.error("Failed to save theme to backend:", error);
-      }
-    }
+    updateSettings({ theme: themeId });
   };
 
   return (

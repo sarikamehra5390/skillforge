@@ -6,7 +6,7 @@ import useSanctuaryStore from "../store/useSanctuaryStore";
 import useAuthStore from "../store/useAuthStore";
 import { useTheme } from "../context/ThemeContext";
 import { useTree } from "../context/TreeContext";
-import api from "../api/axios";
+import { DEFAULT_SANCTUARY_SETTINGS } from "../utils/sanctuaryStorage";
 import {
   TREE_OPTIONS,
   THEME_OPTIONS,
@@ -22,8 +22,6 @@ import { X, Lock } from "lucide-react";
 const CustomizeSanctuaryModal = () => {
   const { isModalOpen, setIsModalOpen, activeTab, setActiveTab, settings, updateSettings } = useSanctuaryStore();
   const { user } = useAuthStore();
-  const { changeTheme } = useTheme();
-  const { setSelectedTree, selectedTree, unlockedTrees, userLevel } = useTree();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const tabs = [
@@ -35,40 +33,8 @@ const CustomizeSanctuaryModal = () => {
     { id: "profile", name: "Profile", emoji: "👤" },
   ];
 
-  const handleRestoreDefaults = async () => {
-    // Default values
-    const defaultSettings = {
-      theme: "classic",
-      treeType: "sprout",
-      companion: null, // None
-      music: ["fireflies"],
-      decorations: [],
-      displayName: "",
-      avatar: "",
-      bio: "",
-      favoriteSkill: "",
-      profileFrame: "none",
-      avatarColor: "from-primary-400 to-secondary-400",
-      title: "beginner",
-    };
-
-    // Update Theme Context
-    changeTheme(defaultSettings.theme);
-    // Update Tree Context
-    setSelectedTree(defaultSettings.treeType);
-    // Update Sanctuary Store
-    updateSettings(defaultSettings);
-    // Save to backend
-    if (user) {
-      try {
-        await api.put("/sanctuary", defaultSettings);
-      } catch (error) {
-        console.error("Failed to restore sanctuary defaults to backend:", error);
-      }
-    }
-    // Save to localStorage
-    localStorage.setItem("skillforge_theme", defaultSettings.theme);
-    
+  const handleRestoreDefaults = () => {
+    updateSettings({ ...DEFAULT_SANCTUARY_SETTINGS });
     setShowConfirmDialog(false);
   };
 
@@ -269,10 +235,7 @@ const ThemeTab = ({ settings, updateSettings, onRestoreDefaults }) => {
           return (
             <button
               key={theme.id}
-              onClick={() => {
-                changeTheme(theme.id);
-                updateSettings({ theme: theme.id });
-              }}
+              onClick={() => changeTheme(theme.id)}
               className={`p-6 rounded-2xl border-2 transition-all text-center ${
                 isSelected ? "border-primary-400 bg-primary-400/10" : "border-white/10 bg-white/5 hover:border-primary-300/30"
               }`}

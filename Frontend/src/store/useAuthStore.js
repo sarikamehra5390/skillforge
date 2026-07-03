@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import api from '../api/axios';
 import { toast } from 'sonner';
+import useSanctuaryStore from './useSanctuaryStore';
 
 const useAuthStore = create((set, get) => ({
   user: null,
@@ -16,6 +17,9 @@ const useAuthStore = create((set, get) => ({
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       set({ user, token, isAuthenticated: true, loading: false });
+      if (user.sanctuarySettings) {
+        useSanctuaryStore.getState().hydrateSettings(user.sanctuarySettings);
+      }
       toast.success("Welcome back!");
       return true;
     } catch (error) {
@@ -33,6 +37,9 @@ const useAuthStore = create((set, get) => ({
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       set({ user, token, isAuthenticated: true, loading: false });
+      if (user.sanctuarySettings) {
+        useSanctuaryStore.getState().hydrateSettings(user.sanctuarySettings);
+      }
       toast.success("Welcome to SkillForge!");
       return true;
     } catch (error) {
@@ -60,6 +67,9 @@ const useAuthStore = create((set, get) => ({
     try {
       const response = await api.get('/users/profile');
       set({ user: response.data, isAuthenticated: true, loading: false });
+      if (response.data.sanctuarySettings) {
+        useSanctuaryStore.getState().hydrateSettings(response.data.sanctuarySettings);
+      }
     } catch (error) {
       localStorage.removeItem('token');
       set({ user: null, token: null, isAuthenticated: false, loading: false });

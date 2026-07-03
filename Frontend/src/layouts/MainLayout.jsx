@@ -13,7 +13,7 @@ import useSanctuaryStore from "../store/useSanctuaryStore";
 function MainLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { showCheckInModal, setShowCheckInModal, checkMoodToday } = useAppStore();
-  const { fetchSettings, settings } = useSanctuaryStore();
+  const { fetchSettings, settings, initializeFromLocal } = useSanctuaryStore();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const activeAmbience = settings?.music || [];
 
@@ -25,8 +25,10 @@ function MainLayout({ children }) {
         }
       });
       fetchSettings();
+    } else {
+      initializeFromLocal();
     }
-  }, [isAuthenticated, checkMoodToday, setShowCheckInModal, fetchSettings]);
+  }, [isAuthenticated, checkMoodToday, setShowCheckInModal, fetchSettings, initializeFromLocal]);
 
   return (
     <div className="flex h-screen ambient-bg overflow-hidden font-sans selection:bg-primary-500/30">

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { TREE_OPTIONS } from "../utils/sanctuary";
+import { loadSanctuaryFromStorage } from "../utils/sanctuaryStorage";
 import { toast } from "sonner";
 import useSanctuaryStore from "../store/useSanctuaryStore";
 import useAuthStore from "../store/useAuthStore";
@@ -8,15 +9,13 @@ const TreeContext = createContext();
 
 export const TreeProvider = ({ children }) => {
   const { user } = useAuthStore();
-  const { settings, updateSettings, fetchSettings } = useSanctuaryStore();
+  const { settings, updateSettings } = useSanctuaryStore();
   const [selectedTree, setSelectedTreeState] = useState("sprout");
 
-  // Unlocked trees: all trees with unlock level <= user's current level
   const unlockedTrees = TREE_OPTIONS.filter(
     (tree) => tree.unlockLevel <= (user?.level || 0)
   ).map((tree) => tree.id);
 
-  // Check if any new trees were unlocked and show toast
   useEffect(() => {
     if (user && user.level) {
       const storedUnlocked = localStorage.getItem("skillForgeUnlockedTrees") || "[]";
@@ -27,7 +26,6 @@ export const TreeProvider = ({ children }) => {
         storedArray = [];
       }
 
-      // Find new unlocked trees not in storage
       const newlyUnlocked = unlockedTrees.filter(
         (treeId) => !storedArray.includes(treeId)
       );
@@ -43,39 +41,29 @@ export const TreeProvider = ({ children }) => {
           }
         });
 
-        // Update stored unlocked trees
         localStorage.setItem("skillForgeUnlockedTrees", JSON.stringify(unlockedTrees));
       }
     }
   }, [user?.level]);
 
-  // Load selected tree from localStorage or settings
   useEffect(() => {
-    // Try loading from settings first
-    if (settings?.treeType) {
-      setSelectedTreeState(settings.treeType);
-    } else {
-      // Fallback to localStorage
-      const stored = localStorage.getItem("skillForgeSelectedTree");
-      if (stored && unlockedTrees.includes(stored)) {
-        setSelectedTreeState(stored);
-      }
-    }
-  }, [settings]);
+    const treeType =
+      settings?.treeType ||
+      user?.sanctuarySettings?.treeType ||
+      loadSanctuaryFromStorage()?.treeType;
 
-  const selectTree = async (treeId) => {
-    // Check if tree is unlocked
+    if (treeType && unlockedTrees.includes(treeType)) {
+      setSelectedTreeState(treeType);
+    }
+  }, [settings?.treeType, user?.sanctuarySettings?.treeType, unlockedTrees]);
+
+  const selectTree = (treeId) => {
     if (!unlockedTrees.includes(treeId)) {
       return;
     }
 
     setSelectedTreeState(treeId);
-
-    // Save to localStorage
-    localStorage.setItem("skillForgeSelectedTree", treeId);
-
-    // Save to MongoDB
-    await updateSettings({ treeType: treeId });
+    updateSettings({ treeType: treeId });
   };
 
   return (

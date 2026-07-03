@@ -49,7 +49,7 @@ router.post("/register", async (req, res) => {
         theme: "classic",
         treeType: "sprout",
         companion: null, // None
-        music: "silent",
+        music: ["fireflies"],
         decorations: []
       });
 
@@ -108,7 +108,7 @@ router.post("/login", async (req, res) => {
         theme: "classic",
         treeType: "sprout",
         companion: null, // None
-        music: "silent",
+        music: ["fireflies"],
         decorations: []
       });
     }
@@ -157,7 +157,7 @@ router.get("/profile", auth, async (req, res) => {
         theme: "classic",
         treeType: "sprout",
         companion: null, // None
-        music: "silent",
+        music: ["fireflies"],
         decorations: []
       });
     }

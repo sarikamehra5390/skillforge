@@ -35,10 +35,31 @@ router.get("/:userId", auth, async (req, res) => {
   }
 });
 
+const ALLOWED_FIELDS = [
+  "theme",
+  "treeType",
+  "companion",
+  "music",
+  "decorations",
+  "displayName",
+  "avatar",
+  "bio",
+  "favoriteSkill",
+  "profileFrame",
+  "avatarColor",
+  "title",
+];
+
 // Update sanctuary settings
 router.put("/", auth, async (req, res) => {
   try {
-    const { theme, treeType, companion, music, decorations, avatarColor, title } = req.body;
+    const updateData = {};
+    for (const field of ALLOWED_FIELDS) {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field];
+      }
+    }
+
     const user = await User.findById(req.user._id);
     const userLevel = user.level;
 
@@ -52,7 +73,7 @@ router.put("/", auth, async (req, res) => {
       cosmic: 15,
       golden: 20,
     };
-    if (treeType && userLevel < treeUnlockLevels[treeType]) {
+    if (updateData.treeType && userLevel < treeUnlockLevels[updateData.treeType]) {
       return res.status(403).json({ message: "Tree type not unlocked yet" });
     }
 
@@ -65,15 +86,17 @@ router.put("/", auth, async (req, res) => {
       "ancient-sage": 5000,
       "world-tree-guardian": 10000,
     };
-    if (title && user.xp < titleUnlockXPs[title]) {
+    if (updateData.title && user.xp < titleUnlockXPs[updateData.title]) {
       return res.status(403).json({ message: "Title not unlocked yet" });
     }
 
-    let settings = await SanctuarySettings.findOneAndUpdate(
-      { userId: req.user._id },
-      { theme, treeType, companion, music, decorations, avatarColor, title },
-      { new: true, upsert: true }
-    );
+    let settings = await SanctuarySettings.findOne({ userId: req.user._id });
+    if (!settings) {
+      settings = new SanctuarySettings({ userId: req.user._id, ...updateData });
+    } else {
+      Object.assign(settings, updateData);
+    }
+    await settings.save();
     res.json(settings);
   } catch (error) {
     console.error("UPDATE sanctuary settings error:", error);
