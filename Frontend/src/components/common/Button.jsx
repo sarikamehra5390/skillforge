@@ -3,11 +3,11 @@ import { cn } from '../../utils/cn';
 
 const Button = ({ children, className, variant = 'primary', size = 'md', ...props }) => {
   const variants = {
-    primary: "bg-primary-500 hover:bg-primary-600 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_25px_rgba(139,92,246,0.5)] border border-primary-500/50",
-    secondary: "bg-white/5 hover:bg-white/10 text-white backdrop-blur-md border border-white/10 hover:border-white/20",
-    ghost: "bg-transparent hover:bg-white/5 text-slate-400 hover:text-white",
-    danger: "bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20",
-    outline: "bg-transparent border border-primary-500/50 hover:bg-primary-500/10 text-primary-400 hover:text-primary-300"
+    primary: "text-white border border-transparent",
+    secondary: "backdrop-blur-md border",
+    ghost: "bg-transparent hover:bg-white/5",
+    danger: "border",
+    outline: "bg-transparent border hover:bg-white/5"
   };
 
   const sizes = {
@@ -24,6 +24,25 @@ const Button = ({ children, className, variant = 'primary', size = 'md', ...prop
         sizes[size],
         className
       )}
+      style={{
+        background: variant === 'primary' ? 'var(--button)' : variant === 'secondary' ? 'var(--surface)' : variant === 'danger' ? 'rgba(239,68,68,0.1)' : 'transparent',
+        color: variant === 'primary' ? 'white' : variant === 'danger' ? 'rgb(248,113,113)' : 'var(--text)',
+        borderColor: variant === 'primary' ? 'transparent' : variant === 'outline' ? 'var(--accent)' : 'var(--border)',
+        boxShadow: variant === 'primary' ? '0 0 20px var(--shadow)' : 'none',
+        '--hover-bg': variant === 'primary' ? 'var(--button-hover)' : variant === 'secondary' ? 'var(--card)' : variant === 'danger' ? 'rgba(239,68,68,0.2)' : 'var(--accent-light)'
+      }}
+      onMouseOver={(e) => {
+        if (variant === 'primary') {
+          e.currentTarget.style.background = 'var(--button-hover)';
+          e.currentTarget.style.boxShadow = '0 0 25px var(--shadow)';
+        }
+      }}
+      onMouseOut={(e) => {
+        if (variant === 'primary') {
+          e.currentTarget.style.background = 'var(--button)';
+          e.currentTarget.style.boxShadow = '0 0 20px var(--shadow)';
+        }
+      }}
       {...props}
     >
       {children}

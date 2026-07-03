@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Sprout, Trees, Leaf, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import useFriendsStore from "../store/useFriendsStore";
 import GlassCard from "../components/common/GlassCard";
 import Badge from "../components/common/Badge";
@@ -14,6 +15,7 @@ const GARDEN_STAGES = [
 ];
 
 const CommunityGarden = () => {
+  const navigate = useNavigate();
   const { friends, fetchFriends } = useFriendsStore();
   const [gardenXP, setGardenXP] = useState(0);
 
@@ -29,6 +31,30 @@ const CommunityGarden = () => {
   const nextStage = GARDEN_STAGES[gardenLevel] || GARDEN_STAGES[GARDEN_STAGES.length - 1];
   const xpNeeded = gardenLevel * 10000;
   const progress = Math.min((gardenXP / xpNeeded) * 100, 100);
+
+  if (friends.length === 0) {
+    return (
+      <div className="space-y-8 pb-24">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-white italic mb-2">Community Garden</h1>
+          <p className="text-slate-400">Grow together with your friends</p>
+        </div>
+        <GlassCard className="p-12 text-center">
+          <Sprout size={64} className="mx-auto text-slate-500 mb-4" />
+          <h3 className="text-xl font-bold text-white mb-2">Invite your first friend</h3>
+          <p className="text-slate-400 mb-6">Start growing your community garden together!</p>
+          <div className="flex justify-center">
+            <button
+              onClick={() => navigate("/search")}
+              className="px-6 py-3 bg-primary-500/20 text-primary-300 rounded-xl font-medium hover:bg-primary-500/30 transition-colors"
+            >
+              Find Friends
+            </button>
+          </div>
+        </GlassCard>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-24">
@@ -106,7 +132,7 @@ const CommunityGarden = () => {
                     {friend.username[0].toUpperCase()}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-bold text-white">{friend.username}</h4>
+                    <h4 className="font-bold text-white">{friend.displayName || friend.username}</h4>
                     <p className="text-sm text-slate-400">Level {friend.level}</p>
                   </div>
                   <Badge className="bg-green-500/20 text-green-400 border-green-500/30">

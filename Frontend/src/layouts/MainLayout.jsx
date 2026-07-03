@@ -4,6 +4,8 @@ import Navbar from "../components/Navbar";
 import CheckInModal from "../components/CheckInModal";
 import CustomizeSanctuaryModal from "../components/CustomizeSanctuaryModal";
 import Companion from "../components/Companion";
+import Decorations from "../components/Decorations";
+import Ambience from "../components/Ambience";
 import useAppStore from "../store/useAppStore";
 import useAuthStore from "../store/useAuthStore";
 import useSanctuaryStore from "../store/useSanctuaryStore";
@@ -11,8 +13,9 @@ import useSanctuaryStore from "../store/useSanctuaryStore";
 function MainLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { showCheckInModal, setShowCheckInModal, checkMoodToday } = useAppStore();
-  const { fetchSettings } = useSanctuaryStore();
+  const { fetchSettings, settings } = useSanctuaryStore();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const activeAmbience = settings?.music || [];
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -33,7 +36,7 @@ function MainLayout({ children }) {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary-500/10 rounded-full blur-[120px] animate-glow-pulse" style={{ animationDelay: '5s' }} />
         
         {/* Fireflies */}
-        {[...Array(12)].map((_, i) => (
+        {activeAmbience.includes("fireflies") && [...Array(12)].map((_, i) => (
           <div 
             key={i}
             className="firefly"
@@ -62,6 +65,8 @@ function MainLayout({ children }) {
 
       <CheckInModal isOpen={showCheckInModal} onClose={() => setShowCheckInModal(false)} />
       <CustomizeSanctuaryModal />
+      <Ambience />
+      <Decorations />
       <Companion />
     </div>
   );

@@ -9,6 +9,7 @@ export const TREE_OPTIONS = [
 ];
 
 export const THEME_OPTIONS = [
+  { id: "classic", name: "SkillForge Classic", emoji: "🌿", description: "The original sanctuary" },
   { id: "sunset-garden", name: "Sunset Garden", emoji: "🌅" },
   { id: "moonlit-forest", name: "Moonlit Forest", emoji: "🌙" },
   { id: "sakura-valley", name: "Sakura Valley", emoji: "🌸" },
@@ -21,26 +22,40 @@ export const COMPANION_OPTIONS = [
   { id: "blue-bird", name: "Blue Bird", emoji: "🐦" },
   { id: "fox", name: "Fox", emoji: "🦊" },
   { id: "cat", name: "Cat", emoji: "🐱" },
-  { id: "rabbit", name: "Rabbit", emoji: "🐰" },
+  { id: "bunny", name: "Bunny", emoji: "🐰" },
+  { id: "deer", name: "Deer", emoji: "🦌" },
   { id: "owl", name: "Owl", emoji: "🦉" },
+  { id: "baby-dragon", name: "Baby Dragon", emoji: "🐉" },
+  { id: "fire-spirit", name: "Fire Spirit", emoji: "🔥" },
 ];
 
 export const MUSIC_OPTIONS = [
-  { id: "rain", name: "Rain Sounds", emoji: "🌧️" },
-  { id: "forest", name: "Forest Ambience", emoji: "🌲" },
-  { id: "piano", name: "Piano", emoji: "🎹" },
-  { id: "lofi", name: "LoFi", emoji: "🎵" },
-  { id: "night", name: "Night Ambience", emoji: "🌙" },
-  { id: "silent", name: "Silent", emoji: "🔇" },
+  { id: "fireflies", name: "Fireflies", emoji: "✨" },
+  { id: "rain", name: "Rain", emoji: "🌧️" },
+  { id: "snow", name: "Snow", emoji: "❄️" },
+  { id: "leaves", name: "Leaves", emoji: "🍂" },
+  { id: "wind", name: "Wind", emoji: "💨" },
+  { id: "fog", name: "Fog", emoji: "🌫️" },
+  { id: "stars", name: "Stars", emoji: "⭐" },
+  { id: "birds", name: "Birds", emoji: "🐦" },
+  { id: "night-mode", name: "Night Mode", emoji: "🌙" },
+  { id: "nature-sounds", name: "Nature Sounds", emoji: "🌲" },
+  { id: "rain-sounds", name: "Rain Sounds", emoji: "🌧️" },
+  { id: "bird-sounds", name: "Bird Sounds", emoji: "🐦" },
+  { id: "wind-sounds", name: "Wind Sounds", emoji: "💨" },
 ];
 
 export const DECORATION_OPTIONS = [
-  { id: "lanterns", name: "Lanterns", emoji: "🏮" },
+  { id: "lanterns", name: "Lantern", emoji: "🏮" },
   { id: "flowers", name: "Flowers", emoji: "🌸" },
-  { id: "stars", name: "Stars", emoji: "⭐" },
-  { id: "crystals", name: "Crystals", emoji: "💎" },
   { id: "butterflies", name: "Butterflies", emoji: "🦋" },
-  { id: "trophy-plaques", name: "Trophy Plaques", emoji: "🏆" },
+  { id: "bridge", name: "Bridge", emoji: "🌉" },
+  { id: "campfire", name: "Campfire", emoji: "🔥" },
+  { id: "bench", name: "Bench", emoji: "🪑" },
+  { id: "crystals", name: "Magic Crystals", emoji: "💎" },
+  { id: "wind-chimes", name: "Wind Chimes", emoji: "🎐" },
+  { id: "waterfall", name: "Waterfall", emoji: "💧" },
+  { id: "stone-path", name: "Stone Path", emoji: "🪨" },
 ];
 
 export const TITLE_OPTIONS = [
@@ -59,6 +74,13 @@ export const AVATAR_COLORS = [
   "from-green-400 to-emerald-500",
   "from-blue-400 to-cyan-500",
   "from-purple-400 to-violet-500",
+];
+
+export const PROFILE_FRAMES = [
+  { id: "none", name: "None", emoji: "➖" },
+  { id: "gold", name: "Gold", emoji: "🏆" },
+  { id: "silver", name: "Silver", emoji: "🥈" },
+  { id: "bronze", name: "Bronze", emoji: "🥉" },
 ];
 
 export const THEME_STYLES = {

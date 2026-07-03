@@ -1,0 +1,35 @@
+/* Global theme variables default (SkillForge Classic) */
+:root {
+  --background: linear-gradient(135deg, #1a1530 0%, #241b42 50%, #34235c 100%);
+  --surface: rgba(36, 27, 66, 0.85);
+  --card: rgba(45, 27, 78, 0.75);
+  --navbar: rgba(26, 21, 48, 0.4);
+  --sidebar: rgba(26, 21, 48, 0.35);
+  --text: #fff8e7;
+  --text-secondary: #cbd5e1;
+  --accent: #a78bfa;
+  --accent-light: rgba(167, 139, 250, 0.15);
+  --button: linear-gradient(135deg, #a78bfa 0%, #f472b6 100%);
+  --button-hover: linear-gradient(135deg, #c4b5fd 0%, #f9a8d4 100%);
+  --border: rgba(167, 139, 250, 0.25);
+  --shadow: rgba(167, 139, 250, 0.25);
+  --glass: rgba(45, 27, 78, 0.65);
+  --glass-border: rgba(167, 139, 250, 0.3);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-image: var(--background);
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+  transition: all 600ms ease-in-out;
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Smooth transition on theme change for all interactive elements */
+* {
+  transition: color 300ms ease, background-color 600ms ease, border-color 600ms ease, box-shadow 600ms ease, background-image 600ms ease;
+}

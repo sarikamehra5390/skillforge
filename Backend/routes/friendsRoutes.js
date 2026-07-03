@@ -1,6 +1,7 @@
 const express = require("express");
 const Friend = require("../models/Friend");
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 const auth = require("../middleware/auth");
 const router = express.Router();
 
@@ -35,6 +36,15 @@ router.post("/request", auth, async (req, res) => {
     });
 
     await friendRequest.save();
+    
+    // Create notification for receiver
+    await Notification.create({
+      userId: friendId,
+      title: "New Friend Request",
+      message: `${req.user.username} sent you a friend request!`,
+      type: "friend"
+    });
+    
     res.status(201).json({ message: "Friend request sent successfully" });
   } catch (error) {
     console.error("Send friend request error:", error);
@@ -130,17 +140,43 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-// Get pending friend requests
+// Get pending friend requests (incoming and outgoing)
 router.get("/pending", auth, async (req, res) => {
   try {
-    const pendingRequests = await Friend.find({
+    const incomingRequests = await Friend.find({
       friendId: req.user._id,
       status: "pending",
     }).populate("userId");
 
-    res.json(pendingRequests.map((r) => r.userId));
+    const outgoingRequests = await Friend.find({
+      userId: req.user._id,
+      status: "pending",
+    }).populate("friendId");
+
+    res.json({
+      incoming: incomingRequests.map((r) => r.userId),
+      outgoing: outgoingRequests.map((r) => r.friendId),
+    });
   } catch (error) {
     console.error("Get pending requests error:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Cancel outgoing friend request
+router.delete("/cancel", auth, async (req, res) => {
+  try {
+    const { friendId } = req.body;
+
+    await Friend.findOneAndDelete({
+      userId: req.user._id,
+      friendId,
+      status: "pending",
+    });
+
+    res.json({ message: "Friend request cancelled successfully" });
+  } catch (error) {
+    console.error("Cancel friend request error:", error);
     res.status(500).json({ message: error.message });
   }
 });

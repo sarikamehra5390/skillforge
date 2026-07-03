@@ -2,15 +2,23 @@ import React, { useEffect, useRef } from 'react';
 import { User, Settings, Palette, Bell, BarChart3, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useAuthStore from '../store/useAuthStore';
+import useSanctuaryStore from '../store/useSanctuaryStore';
 import { useNavigate } from 'react-router-dom';
 
 const ProfileDropdown = ({ isOpen, onClose }) => {
   const dropdownRef = useRef(null);
   const logout = useAuthStore(state => state.logout);
   const user = useAuthStore(state => state.user);
+  const { setIsModalOpen, setActiveTab } = useSanctuaryStore();
   const navigate = useNavigate();
 
   useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         onClose();
@@ -19,20 +27,58 @@ const ProfileDropdown = ({ isOpen, onClose }) => {
     
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
     }
     
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
 
   const menuItems = [
-    { icon: User, label: 'My Profile', action: () => { navigate('/profile'); onClose(); } },
-    { icon: Settings, label: 'Manage Account', action: onClose },
-    { icon: Palette, label: 'Appearance', action: onClose },
-    { icon: Bell, label: 'Notification Settings', action: onClose },
-    { icon: BarChart3, label: 'My Statistics', action: () => { navigate('/profile'); onClose(); } },
-    { icon: LogOut, label: 'Logout', action: () => { logout(); navigate('/login'); } }
+    { 
+      icon: User, 
+      label: 'My Profile', 
+      action: () => { 
+        navigate('/profile'); 
+        onClose(); 
+      } 
+    },
+    { 
+      icon: Settings, 
+      label: 'Manage Account', 
+      action: () => { 
+        navigate('/account'); 
+        onClose(); 
+      } 
+    },
+    { 
+      icon: Palette, 
+      label: 'Appearance', 
+      action: () => { 
+        setActiveTab('theme'); 
+        setIsModalOpen(true); 
+        onClose(); 
+      } 
+    },
+    { 
+      icon: Bell, 
+      label: 'Notification Settings', 
+      action: () => { 
+        navigate('/notifications'); 
+        onClose(); 
+      } 
+    },
+    { 
+      icon: LogOut, 
+      label: 'Logout', 
+      action: () => { 
+        logout(); 
+        navigate('/login'); 
+        onClose(); 
+      } 
+    }
   ];
 
   return (

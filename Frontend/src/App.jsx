@@ -13,18 +13,24 @@ import Friends from "./pages/Friends";
 import Search from "./pages/Search";
 import FriendProfile from "./pages/FriendProfile";
 import CommunityGarden from "./pages/CommunityGarden";
+import ManageAccount from "./pages/ManageAccount";
+import NotificationSettings from "./pages/NotificationSettings";
 
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./components/common/ProtectedRoute";
+import { ThemeProvider } from "./context/ThemeContext";
+import { TreeProvider } from "./context/TreeContext";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Toaster position="top-right" theme="dark" closeButton richColors />
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+    <ThemeProvider>
+      <TreeProvider>
+        <BrowserRouter>
+          <Toaster position="top-right" theme="dark" closeButton richColors />
+          <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
@@ -108,12 +114,30 @@ function App() {
               </MainLayout>
             }
           />
+          <Route
+            path="/account"
+            element={
+              <MainLayout>
+                <ManageAccount />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <MainLayout>
+                <NotificationSettings />
+              </MainLayout>
+            }
+          />
         </Route>
 
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+        </BrowserRouter>
+      </TreeProvider>
+    </ThemeProvider>
   );
 }
 

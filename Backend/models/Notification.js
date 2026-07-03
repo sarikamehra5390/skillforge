@@ -17,7 +17,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['streak', 'achievement', 'levelup', 'mission', 'system'],
+      enum: ['streak', 'achievement', 'levelup', 'mission', 'system', 'friend'],
       required: true
     },
     read: {

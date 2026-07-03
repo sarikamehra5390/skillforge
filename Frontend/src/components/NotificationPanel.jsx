@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Bell, Check, Trophy, Zap, Target, Flame } from 'lucide-react';
+import { Bell, Check, Trophy, Zap, Target, Flame, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useAppStore from '../store/useAppStore';
 import GlassCard from './common/GlassCard';
@@ -10,6 +10,7 @@ const getIconForType = (type) => {
     case 'levelup': return Zap;
     case 'mission': return Target;
     case 'streak': return Flame;
+    case 'friend': return Users;
     default: return Bell;
   }
 };
@@ -19,7 +20,8 @@ const getColorForType = (type) => {
     case 'achievement': return 'text-purple-400';
     case 'levelup': return 'text-primary-400';
     case 'mission': return 'text-green-400';
-    case 'streak': return 'text-warm-amber';
+    case 'streak': return 'text-amber-400';
+    case 'friend': return 'text-pink-400';
     default: return 'text-slate-400';
   }
 };

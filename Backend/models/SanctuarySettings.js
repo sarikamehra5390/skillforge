@@ -9,9 +9,9 @@ const sanctuarySettingsSchema = new mongoose.Schema(
       unique: true,
     },
     theme: {
-      type: String,
-      enum: ["sunset-garden", "moonlit-forest", "sakura-valley", "ghibli-sky", "rainy-evening", "starry-meadow"],
-      default: "moonlit-forest",
+    type: String,
+    enum: ["classic", "sunset-garden", "moonlit-forest", "sakura-valley", "ghibli-sky", "rainy-evening", "starry-meadow"],
+    default: "classic",
     },
     treeType: {
       type: String,
@@ -19,19 +19,40 @@ const sanctuarySettingsSchema = new mongoose.Schema(
       default: "sprout",
     },
     companion: {
-      type: String,
-      enum: ["blue-bird", "fox", "cat", "rabbit", "owl"],
-      default: "blue-bird",
+    type: String,
+    enum: ["blue-bird", "fox", "cat", "bunny", "deer", "owl", "baby-dragon", "fire-spirit"],
+    default: null, // None
     },
     music: {
-      type: String,
-      enum: ["rain", "forest", "piano", "lofi", "night", "silent"],
-      default: "silent",
+      type: [String],
+      enum: ["fireflies", "rain", "snow", "leaves", "wind", "fog", "stars", "birds", "night-mode", "nature-sounds", "rain-sounds", "bird-sounds", "wind-sounds"],
+      default: ["fireflies"],
     },
     decorations: {
       type: [String],
-      enum: ["lanterns", "flowers", "stars", "crystals", "butterflies", "trophy-plaques"],
+      enum: ["lanterns", "flowers", "butterflies", "bridge", "campfire", "bench", "crystals", "wind-chimes", "waterfall", "stone-path"],
       default: [],
+    },
+    displayName: {
+      type: String,
+      default: "",
+    },
+    avatar: {
+      type: String,
+      default: "",
+    },
+    bio: {
+      type: String,
+      default: "",
+    },
+    favoriteSkill: {
+      type: String,
+      default: "",
+    },
+    profileFrame: {
+      type: String,
+      enum: ["none", "gold", "silver", "bronze"],
+      default: "none",
     },
     avatarColor: {
       type: String,

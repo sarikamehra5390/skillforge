@@ -1,8 +1,11 @@
 const express = require("express");
-const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const Session = require("../models/Session");
+const SanctuarySettings = require("../models/SanctuarySettings");
 const auth = require("../middleware/auth");
+const { calculateCurrentStreak } = require("../utils/gamification");
 const router = express.Router();
 
 router.get("/test", (req, res) => {
@@ -40,6 +43,16 @@ router.post("/register", async (req, res) => {
         streak: 0
       });
 
+      // Create default sanctuary settings for new user
+      const sanctuarySettings = await SanctuarySettings.create({
+        userId: user._id,
+        theme: "classic",
+        treeType: "sprout",
+        companion: null, // None
+        music: "silent",
+        decorations: []
+      });
+
       console.log(`New user created: ${email}`);
 
       const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "secret", { expiresIn: "7d" });
@@ -53,7 +66,8 @@ router.post("/register", async (req, res) => {
           email: user.email,
           xp: user.xp,
           level: user.level,
-          streak: user.streak
+          streak: user.streak,
+          sanctuarySettings
         }
       });
     } catch (innerError) {
@@ -86,6 +100,19 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
+    // Get or create sanctuary settings
+    let sanctuarySettings = await SanctuarySettings.findOne({ userId: user._id });
+    if (!sanctuarySettings) {
+      sanctuarySettings = await SanctuarySettings.create({
+        userId: user._id,
+        theme: "classic",
+        treeType: "sprout",
+        companion: null, // None
+        music: "silent",
+        decorations: []
+      });
+    }
+
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "secret", { expiresIn: "7d" });
 
     res.status(200).json({
@@ -97,7 +124,8 @@ router.post("/login", async (req, res) => {
         email: user.email,
         xp: user.xp,
         level: user.level,
-        streak: user.streak
+        streak: user.streak,
+        sanctuarySettings
       }
     });
   } catch (error) {
@@ -108,22 +136,51 @@ router.post("/login", async (req, res) => {
 
 // Get Profile
 router.get("/profile", auth, async (req, res) => {
-  res.json({
-    id: req.user._id,
-    username: req.user.username,
-    email: req.user.email,
-    xp: req.user.xp,
-    level: req.user.level,
-    streak: req.user.streak
-  });
+  try {
+    const user = await User.findById(req.user._id).select("-password");
+    const allSessions = await Session.find({ userId: user._id });
+    const currentStreak = calculateCurrentStreak(allSessions);
+    
+    if (user.streak !== currentStreak) {
+      user.streak = currentStreak;
+      if (currentStreak > (user.longestStreak || 0)) {
+        user.longestStreak = currentStreak;
+      }
+      await user.save();
+    }
+
+    // Get or create sanctuary settings
+    let sanctuarySettings = await SanctuarySettings.findOne({ userId: user._id });
+    if (!sanctuarySettings) {
+      sanctuarySettings = await SanctuarySettings.create({
+        userId: user._id,
+        theme: "classic",
+        treeType: "sprout",
+        companion: null, // None
+        music: "silent",
+        decorations: []
+      });
+    }
+    
+    // Combine user with sanctuary settings
+    const userWithSettings = {
+      ...user.toObject(),
+      sanctuarySettings
+    };
+    
+    res.json(userWithSettings);
+  } catch (error) {
+    console.error("GET PROFILE ERROR:", error);
+    res.status(500).json({ message: error.message });
+  }
 });
 
 // Search users
 router.get("/search", auth, async (req, res) => {
   try {
-    const { query } = req.query;
-    if (!query) {
-      return res.status(400).json({ message: "Search query is required" });
+    const searchTerm = req.query.q || req.query.query;
+    if (!searchTerm) {
+      return res.status(200).json([]); // Return empty if no query
     }
 
     const users = await User.find({
@@ -131,9 +188,9 @@ router.get("/search", auth, async (req, res) => {
         { _id: { $ne: req.user._id } },
         {
           $or: [
-            { username: { $regex: query, $options: "i" } },
-            { email: { $regex: query, $options: "i" } },
-            { displayName: { $regex: query, $options: "i" } },
+            { username: { $regex: searchTerm, $options: "i" } },
+            { email: { $regex: searchTerm, $options: "i" } },
+            { displayName: { $regex: searchTerm, $options: "i" } },
           ],
         },
       ],
@@ -157,6 +214,53 @@ router.get("/:userId", auth, async (req, res) => {
     res.json(user);
   } catch (error) {
     console.error("Get public profile error:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Update profile
+router.put("/profile", auth, async (req, res) => {
+  try {
+    const { username, email, password, avatar, displayName, notificationSettings } = req.body;
+    const updateData = {};
+
+    if (username) {
+      const existingUsername = await User.findOne({ 
+        username, 
+        _id: { $ne: req.user._id } 
+      });
+      if (existingUsername) {
+        return res.status(400).json({ message: "Username already taken" });
+      }
+      updateData.username = username;
+    }
+    if (email) {
+      const existingEmail = await User.findOne({ 
+        email, 
+        _id: { $ne: req.user._id } 
+      });
+      if (existingEmail) {
+        return res.status(400).json({ message: "Email already taken" });
+      }
+      updateData.email = email;
+    }
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateData.password = hashedPassword;
+    }
+    if (avatar) updateData.avatar = avatar;
+    if (displayName !== undefined) updateData.displayName = displayName;
+    if (notificationSettings) updateData.notificationSettings = notificationSettings;
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id, 
+      updateData, 
+      { new: true }
+    ).select("-password");
+
+    res.json(user);
+  } catch (error) {
+    console.error("Update profile error:", error);
     res.status(500).json({ message: error.message });
   }
 });

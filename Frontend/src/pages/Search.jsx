@@ -53,6 +53,12 @@ const Search = () => {
           <h3 className="text-xl font-bold text-white mb-2">No users found</h3>
           <p className="text-slate-400">Try a different search query</p>
         </GlassCard>
+      ) : searchResults.length === 0 ? (
+        <GlassCard className="p-12 text-center">
+          <Users size={64} className="mx-auto text-slate-500 mb-4" />
+          <h3 className="text-xl font-bold text-white mb-2">Find your friends</h3>
+          <p className="text-slate-400">Start typing to search for friends</p>
+        </GlassCard>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {searchResults.map((user) => {
@@ -64,7 +70,7 @@ const Search = () => {
                   {user.username[0].toUpperCase()}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-white">{user.username}</h3>
+                  <h3 className="font-bold text-white">{user.displayName || user.username}</h3>
                   <p className="text-sm text-slate-400">Level {user.level}</p>
                 </div>
               </div>

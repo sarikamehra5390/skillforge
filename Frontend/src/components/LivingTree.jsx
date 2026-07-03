@@ -8,10 +8,11 @@ import {
   ACHIEVEMENTS 
 } from '../utils/gamification';
 import useSanctuaryStore from '../store/useSanctuaryStore';
+import { useTree } from '../context/TreeContext';
 
 const LivingTree = ({ user, skills, sessions, isWatering }) => {
   const [selectedBranch, setSelectedBranch] = useState(null);
-  const { settings } = useSanctuaryStore();
+  const { selectedTree: selectedTreeType } = useTree();
   const treeStage = getTreeStage(user?.xp || 0);
   const season = getCurrentSeason();
   const level = user?.level || 1;
@@ -19,8 +20,7 @@ const LivingTree = ({ user, skills, sessions, isWatering }) => {
   const unlockedAchievements = ACHIEVEMENTS.filter(a => (user?.xp || 0) >= a.xpRequired);
   const treeData = calculateTreeData(skills || [], sessions || [], unlockedAchievements);
 
-  // Get tree type from sanctuary settings
-  const selectedTreeType = settings?.treeType || 'sprout';
+  // Tree emoji map
   const treeEmojis = {
     sprout: '🌱',
     classic: '🌳',

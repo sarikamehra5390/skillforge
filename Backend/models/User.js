@@ -52,6 +52,13 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "CommunityGarden",
     },
+    notificationSettings: {
+      dailyReminders: { type: Boolean, default: true },
+      friendNotifications: { type: Boolean, default: true },
+      achievementNotifications: { type: Boolean, default: true },
+      gardenNotifications: { type: Boolean, default: true },
+      emailNotifications: { type: Boolean, default: false },
+    },
   },
   {
     timestamps: true,
