@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import GlassCard from './common/GlassCard';
 import useAppStore from '../store/useAppStore';
 
@@ -59,9 +60,20 @@ const CheckInModal = ({ isOpen, onClose }) => {
 
     try {
       setIsSaving(true);
-      await saveMood(mood);
+      const result = await saveMood(mood);
+
+      if (!result?.success) {
+        toast.error(
+          result?.error?.message ||
+            'Failed to save your mood. Please try again.'
+        );
+      }
     } catch (error) {
       console.error('Failed to save mood:', error);
+      toast.error(
+        error?.message ||
+          'Failed to save your mood. Please try again.'
+      );
     } finally {
       setIsSaving(false);
     }

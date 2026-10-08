@@ -88,7 +88,7 @@ router.post("/", auth, async (req, res) => {
         lastCheckIn: new Date(),
       },
       {
-        new: true,
+        returnDocument: "after",
       }
     );
 

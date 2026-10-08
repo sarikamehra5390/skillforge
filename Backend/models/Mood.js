@@ -22,13 +22,12 @@ const moodSchema = new mongoose.Schema(
   }
 );
 
-moodSchema.pre('save', function (next) {
+moodSchema.pre('save', function () {
   if (this.date) {
     const d = new Date(this.date);
     d.setHours(0, 0, 0, 0);
     this.date = d;
   }
-  next();
 });
 
 moodSchema.index({ userId: 1, date: 1 }, { unique: true });
