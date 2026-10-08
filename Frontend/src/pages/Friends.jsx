@@ -7,16 +7,7 @@ import useAuthStore from "../store/useAuthStore";
 import GlassCard from "../components/common/GlassCard";
 import Badge from "../components/common/Badge";
 import { getTreeStage } from "../utils/gamification";
-
-// Debounce hook
-const useDebounce = (value, delay) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-  return debouncedValue;
-};
+import useDebounce from "../utils/useDebounce";
 
 const Friends = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -191,7 +182,7 @@ const Friends = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by username, email, or display name"
+              placeholder="Search by username or display name..."
               className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-400 focus:outline-none focus:border-primary-400/30"
             />
           </div>

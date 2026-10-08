@@ -1,12 +1,12 @@
 const express = require("express");
 const Activity = require("../models/Activity");
+const Friend = require("../models/Friend");
 const auth = require("../middleware/auth");
 const router = express.Router();
 
 // Get friend activity feed
 router.get("/feed", auth, async (req, res) => {
   try {
-    const Friend = require("../models/Friend");
     // Get all accepted friends
     const friends = await Friend.find({
       $or: [

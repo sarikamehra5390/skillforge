@@ -4,21 +4,12 @@ import { Search as SearchIcon, UserPlus, Users } from "lucide-react";
 import useFriendsStore from "../store/useFriendsStore";
 import GlassCard from "../components/common/GlassCard";
 import { getTreeStage } from "../utils/gamification";
-
-// Let's add a simple useDebounce hook inline for now!
-const useDebounce = (value, delay) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-  return debouncedValue;
-};
+import useDebounce from "../utils/useDebounce";
 
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedQuery = useDebounce(searchQuery, 300);
-  const { searchResults, searchUsers, sendFriendRequest, friends, pendingRequests } = useFriendsStore();
+  const { searchResults, searchUsers, sendFriendRequest, friends, incomingRequests, outgoingRequests } = useFriendsStore();
 
   useEffect(() => {
     searchUsers(debouncedQuery);
@@ -29,7 +20,7 @@ const Search = () => {
   };
 
   const hasPendingRequest = (userId) => {
-    return pendingRequests.some((r) => r._id === userId);
+    return incomingRequests.some((r) => r._id === userId) || outgoingRequests.some((r) => r._id === userId);
   };
 
   return (
@@ -42,7 +33,7 @@ const Search = () => {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by username, email, or name..."
+          placeholder="Search by username or display name..."
           className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-400 focus:outline-none focus:border-primary-400/30"
         />
       </div>

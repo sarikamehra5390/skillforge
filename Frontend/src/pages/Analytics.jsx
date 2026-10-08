@@ -25,12 +25,14 @@ import api from '../api/axios';
 import GlassCard from '../components/common/GlassCard';
 import Badge from '../components/common/Badge';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
+import useAuthStore from '../store/useAuthStore';
 
 const COLORS = ['#6366f1', '#a855f7', '#ec4899', '#f43f5e', '#f59e0b', '#10b981'];
 
 const Analytics = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuthStore();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,6 +44,7 @@ const Analytics = () => {
 
         const sessions = sessionsRes.data;
         const skills = skillsRes.data;
+        const userXP = user?.xp || 0;
 
         // Process data for charts
         // 1. Weekly Trends (last 7 days)
@@ -54,8 +57,8 @@ const Analytics = () => {
           );
           return {
             name: dateStr,
-            minutes: daySessions.reduce((acc, s) => acc + s.duration, 0),
-            xp: daySessions.reduce((acc, s) => acc + s.xpGained, 0)
+            minutes: daySessions.reduce((acc, s) => acc + (typeof s.duration === 'number' ? s.duration : 0), 0),
+            xp: daySessions.reduce((acc, s) => acc + (s.xpGained || s.duration || 0), 0)
           };
         });
 
@@ -65,16 +68,56 @@ const Analytics = () => {
           value: sessions.filter(s => s.skillId === skill._id).reduce((acc, s) => acc + s.duration, 0)
         })).filter(s => s.value > 0);
 
-        setData({ weeklyData, skillDist, totalSessions: sessions.length, totalSkills: skills.length });
+        // 3. Calculate Growth Index
+        const growthIndex = Math.min(100, Math.round((userXP / 2000) * 50 + (skills.length * 5) + (sessions.length * 2)));
+
+        // 4. Calculate Peak Day (group sessions by day-of-week, find day with most total minutes)
+        const dayMinutes = [0, 0, 0, 0, 0, 0, 0];
+        sessions.forEach(s => {
+          if (s.completedAt) {
+            const dow = new Date(s.completedAt).getDay();
+            dayMinutes[dow] += (s.duration || 0);
+          }
+        });
+        const totalDayMinutes = dayMinutes.reduce((a, b) => a + b, 0);
+        let peakIndex = -1;
+        if (totalDayMinutes > 0) {
+          peakIndex = dayMinutes.indexOf(Math.max(...dayMinutes));
+        }
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const peakDay = peakIndex >= 0 ? dayNames[peakIndex] : 'N/A';
+
+        setData({ 
+          weeklyData, 
+          skillDist, 
+          totalSessions: sessions.length, 
+          totalSkills: skills.length,
+          growthIndex,
+          userXP,
+          peakDay
+        });
         setLoading(false);
       } catch (error) {
         console.error('Failed to fetch analytics', error);
+        setData({
+          weeklyData: Array.from({ length: 7 }, (_, i) => {
+            const date = new Date();
+            date.setDate(date.getDate() - (6 - i));
+            return { name: date.toLocaleDateString('en-US', { weekday: 'short' }), minutes: 0, xp: 0 };
+          }),
+          skillDist: [],
+          totalSessions: 0,
+          totalSkills: 0,
+          growthIndex: 0,
+          userXP: 0,
+          peakDay: 'N/A'
+        });
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [user]);
 
   if (loading) {
     return (
@@ -99,11 +142,10 @@ const Analytics = () => {
           <p className="text-slate-400 font-medium mt-1">Visualize your tree's growth and nurture it better</p>
         </div>
         <div className="flex gap-4">
-          <button className="flex items-center gap-3 px-6 py-2.5 bg-white/[0.02] border border-white/5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white hover:border-white/20 transition-all">
+          <div className="flex items-center gap-3 px-6 py-2.5 bg-white/[0.02] border border-white/5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-400">
             <Calendar size={16} className="text-primary-400" />
             Last 7 Days
-            <ChevronDown size={14} />
-          </button>
+          </div>
         </div>
       </div>
 
@@ -112,11 +154,11 @@ const Analytics = () => {
         <GlassCard className="p-8 border-t-2 border-t-primary-400 group">
           <p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.2em]">Growth Index</p>
           <div className="flex items-end gap-3 mt-4">
-            <p className="text-4xl font-black text-white italic tracking-tighter">84</p>
-            <Badge variant="success" className="mb-2 px-2 py-0.5 rounded-md">+5%</Badge>
+            <p className="text-4xl font-black text-white italic tracking-tighter">{data.growthIndex}</p>
+            <Badge variant="success" className="mb-2 px-2 py-0.5 rounded-md">/100</Badge>
           </div>
           <div className="w-full h-1 bg-white/5 rounded-full mt-6 overflow-hidden">
-            <div className="h-full bg-primary-400 w-[84%] group-hover:w-[86%] transition-all duration-1000 shadow-[0_0_10px_rgba(167,139,250,0.5)]" />
+            <div className="h-full bg-primary-400 group-hover:w-full transition-all duration-1000 shadow-[0_0_10px_rgba(167,139,250,0.5)]" style={{ width: `${data.growthIndex}%` }} />
           </div>
         </GlassCard>
         <GlassCard className="p-8 border-t-2 border-t-secondary-400">
@@ -133,17 +175,17 @@ const Analytics = () => {
           <p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.2em]">Growth Goal</p>
           <div className="mt-4">
             <div className="flex justify-between items-end mb-2">
-              <p className="text-sm font-black text-white italic uppercase tracking-tighter">1,250 <span className="text-[10px] text-slate-500 not-italic">/ 2,000 XP</span></p>
-              <span className="text-xs font-black text-warm-amber">62%</span>
+              <p className="text-sm font-black text-white italic uppercase tracking-tighter">{Math.round(data.userXP).toLocaleString()} <span className="text-[10px] text-slate-500 not-italic">/ 2,000 XP</span></p>
+              <span className="text-xs font-black text-warm-amber">{Math.min(100, Math.round((data.userXP / 2000) * 100))}%</span>
             </div>
             <div className="h-1.5 bg-white/[0.03] rounded-full overflow-hidden border border-white/5">
-              <div className="h-full bg-warm-amber w-[62%] shadow-[0_0_10px_rgba(251,191,36,0.3)]" />
+              <div className="h-full bg-warm-amber shadow-[0_0_10px_rgba(251,191,36,0.3)]" style={{ width: `${Math.min(100, (data.userXP / 2000) * 100)}%` }} />
             </div>
           </div>
         </GlassCard>
         <GlassCard className="p-8 border-t-2 border-t-emerald-400">
           <p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.2em]">Peak Day</p>
-          <p className="text-3xl font-black text-white italic tracking-tighter mt-4 uppercase">Wednesday</p>
+          <p className="text-3xl font-black text-white italic tracking-tighter mt-4 uppercase">{data.peakDay}</p>
           <p className="text-[10px] text-slate-500 mt-6 font-bold uppercase tracking-widest italic">Most growth detected</p>
         </GlassCard>
       </div>

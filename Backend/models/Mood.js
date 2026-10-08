@@ -22,4 +22,15 @@ const moodSchema = new mongoose.Schema(
   }
 );
 
+moodSchema.pre('save', function (next) {
+  if (this.date) {
+    const d = new Date(this.date);
+    d.setHours(0, 0, 0, 0);
+    this.date = d;
+  }
+  next();
+});
+
+moodSchema.index({ userId: 1, date: 1 }, { unique: true });
+
 module.exports = mongoose.model("Mood", moodSchema);

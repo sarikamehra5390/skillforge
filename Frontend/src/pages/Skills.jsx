@@ -1,28 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, SlidersHorizontal, Loader2, BookOpen } from 'lucide-react';
+import { Plus, Search, Filter, SlidersHorizontal, Loader2, BookOpen, AlertCircle, RefreshCw } from 'lucide-react';
 import api from '../api/axios';
 import SkillCard from '../components/skills/SkillCard';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import GlassCard from '../components/common/GlassCard';
 import Illustration from '../components/common/Illustration';
+import useDashboardStore from '../store/useDashboardStore';
 import { toast } from 'sonner';
 
 const Skills = () => {
   const [skills, setSkills] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingSkill, setEditingSkill] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', category: '' });
   const [newSkill, setNewSkill] = useState({ name: '', category: '' });
+  const { createSkill, updateSkill, deleteSkill } = useDashboardStore();
 
   const fetchSkills = async () => {
+    setError(null);
     try {
       const response = await api.get('/skills');
       setSkills(response.data);
       setLoading(false);
     } catch (error) {
       toast.error('Failed to connect to your mastery forge');
+      setError('Could not load your mastery paths. Please try again.');
       setLoading(false);
     }
   };
@@ -34,7 +42,7 @@ const Skills = () => {
   const handleAddSkill = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/skills', newSkill);
+      await createSkill(newSkill);
       toast.success('A new path has been forged!', { icon: '✨' });
       setIsAddModalOpen(false);
       setNewSkill({ name: '', category: '' });
@@ -44,10 +52,31 @@ const Skills = () => {
     }
   };
 
+  const handleEditSkill = (skill) => {
+    setEditingSkill(skill);
+    setEditForm({ name: skill.name, category: skill.category });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingSkill) return;
+    try {
+      await updateSkill(editingSkill._id, editForm);
+      toast.success('Path refined successfully!', { icon: '✨' });
+      setIsEditModalOpen(false);
+      setEditingSkill(null);
+      setEditForm({ name: '', category: '' });
+      fetchSkills();
+    } catch (error) {
+      toast.error('Failed to refine path. Please try again.');
+    }
+  };
+
   const handleDeleteSkill = async (id) => {
     if (window.confirm('Are you sure you want to release this skill path?')) {
       try {
-        await api.delete(`/skills/${id}`);
+        await deleteSkill(id);
         toast.success('Path released');
         fetchSkills();
       } catch (error) {
@@ -108,7 +137,23 @@ const Skills = () => {
       </GlassCard>
 
       {/* Skills Grid */}
-      {loading ? (
+      {error ? (
+        <GlassCard className="p-8 border-red-500/20 bg-red-500/5">
+          <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-400 shrink-0">
+              <AlertCircle size={32} />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-white mb-2">Mastery Forge Unreachable</h3>
+              <p className="text-slate-400">{error}</p>
+            </div>
+            <Button onClick={fetchSkills} variant="secondary" className="shrink-0">
+              <RefreshCw size={16} className="mr-2" />
+              Retry
+            </Button>
+          </div>
+        </GlassCard>
+      ) : loading ? (
         <div className="flex items-center justify-center py-24">
           <div className="w-10 h-10 border-2 border-primary-500/20 border-t-primary-500 rounded-full animate-spin" />
         </div>
@@ -119,7 +164,7 @@ const Skills = () => {
               key={skill._id} 
               skill={skill} 
               onDelete={handleDeleteSkill}
-              onEdit={() => toast.info('This path is currently being refined.')}
+              onEdit={() => handleEditSkill(skill)}
             />
           ))}
         </div>
@@ -173,12 +218,52 @@ const Skills = () => {
                   type="button" 
                   variant="secondary" 
                   className="flex-1 rounded-2xl py-4"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => { setIsAddModalOpen(false); setNewSkill({ name: '', category: '' }); }}
                 >
                   Maybe later
                 </Button>
                 <Button type="submit" className="flex-1 rounded-2xl py-4 shadow-xl shadow-primary-500/20">
                   Forge Path
+                </Button>
+              </div>
+            </form>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* Edit Skill Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-forge-950/80 backdrop-blur-md animate-in fade-in duration-500">
+          <GlassCard className="w-full max-w-md p-10 border-white/10 shadow-2xl rounded-[2.5rem]">
+            <h2 className="text-3xl font-bold text-white mb-8 tracking-tight">Refine Mastery Path</h2>
+            <form onSubmit={handleSaveEdit} className="space-y-8">
+              <Input 
+                label="Skill Name" 
+                placeholder="e.g. Piano, Design, Cooking" 
+                value={newSkill.name}
+                onChange={(e) => setNewSkill({...newSkill, name: e.target.value})}
+                required
+                className="bg-white/5 border-white/10 p-4"
+              />
+              <Input 
+                label="Category" 
+                placeholder="e.g. Art, Tech, Wellness" 
+                value={newSkill.category}
+                onChange={(e) => setNewSkill({...newSkill, category: e.target.value})}
+                required
+                className="bg-white/5 border-white/10 p-4"
+              />
+              <div className="flex gap-4 mt-10">
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  className="flex-1 rounded-2xl py-4"
+                  onClick={() => { setIsEditModalOpen(false); setEditingSkill(null); setNewSkill({ name: '', category: '' }); }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" className="flex-1 rounded-2xl py-4 shadow-xl shadow-primary-500/20">
+                  Save Changes
                 </Button>
               </div>
             </form>

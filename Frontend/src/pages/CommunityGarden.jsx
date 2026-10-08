@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Sprout, Trees, Leaf, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useFriendsStore from "../store/useFriendsStore";
+import useAuthStore from "../store/useAuthStore";
 import GlassCard from "../components/common/GlassCard";
 import Badge from "../components/common/Badge";
 
@@ -14,23 +15,30 @@ const GARDEN_STAGES = [
   { level: 5, name: "World Garden", emoji: "🌍" },
 ];
 
+const XP_PER_LEVEL = 10000;
+
 const CommunityGarden = () => {
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
   const { friends, fetchFriends } = useFriendsStore();
   const [gardenXP, setGardenXP] = useState(0);
 
   useEffect(() => {
     fetchFriends();
-    // Calculate total XP from friends + user (placeholder for now)
-    const totalXP = friends.reduce((sum, friend) => sum + (friend.xp || 0), 0);
+    // Calculate total XP from friends + current user
+    const friendsXP = friends.reduce((sum, friend) => sum + (friend.xp || 0), 0);
+    const totalXP = friendsXP + (user?.xp || 0);
     setGardenXP(totalXP);
-  }, [fetchFriends, friends]);
+  }, [fetchFriends, friends, user]);
 
-  const gardenLevel = Math.min(Math.floor(gardenXP / 10000) + 1, GARDEN_STAGES.length);
+  const gardenLevel = Math.min(Math.floor(gardenXP / XP_PER_LEVEL) + 1, GARDEN_STAGES.length);
   const currentStage = GARDEN_STAGES[gardenLevel - 1];
   const nextStage = GARDEN_STAGES[gardenLevel] || GARDEN_STAGES[GARDEN_STAGES.length - 1];
-  const xpNeeded = gardenLevel * 10000;
-  const progress = Math.min((gardenXP / xpNeeded) * 100, 100);
+  const xpInCurrentLevel = gardenXP - (gardenLevel - 1) * XP_PER_LEVEL;
+  const nextLevelXP = XP_PER_LEVEL;
+  const gardenProgress = Math.min((xpInCurrentLevel / nextLevelXP) * 100, 100);
+  const progress = gardenProgress;
+  const xpNeeded = gardenLevel * XP_PER_LEVEL;
 
   if (friends.length === 0) {
     return (

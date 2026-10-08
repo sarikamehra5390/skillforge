@@ -27,7 +27,6 @@ const reactionSchema = new mongoose.Schema(
   }
 );
 
-// Index to efficiently query reactions by date and users
-reactionSchema.index({ fromUserId: 1, toUserId: 1, date: 1 });
+reactionSchema.index({ fromUserId: 1, toUserId: 1, type: 1, date: 1 });
 
 module.exports = mongoose.model("Reaction", reactionSchema);

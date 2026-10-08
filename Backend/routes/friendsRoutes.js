@@ -1,23 +1,32 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Friend = require("../models/Friend");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
 const auth = require("../middleware/auth");
 const router = express.Router();
 
-// Send friend request
+const { isValidObjectId } = mongoose.Types;
+
 router.post("/request", auth, async (req, res) => {
   try {
     const { friendId } = req.body;
     if (!friendId) {
       return res.status(400).json({ message: "Friend ID is required" });
     }
+    if (!isValidObjectId(friendId)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
 
     if (friendId === req.user._id.toString()) {
       return res.status(400).json({ message: "Cannot add yourself as a friend" });
     }
 
-    // Check if request already exists
+    const targetUser = await User.findById(friendId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     const existingRequest = await Friend.findOne({
       $or: [
         { userId: req.user._id, friendId },
@@ -37,7 +46,6 @@ router.post("/request", auth, async (req, res) => {
 
     await friendRequest.save();
     
-    // Create notification for receiver
     await Notification.create({
       userId: friendId,
       title: "New Friend Request",
@@ -52,10 +60,15 @@ router.post("/request", auth, async (req, res) => {
   }
 });
 
-// Accept friend request
 router.post("/accept", auth, async (req, res) => {
   try {
     const { friendId } = req.body;
+    if (!friendId) {
+      return res.status(400).json({ message: "Friend ID is required" });
+    }
+    if (!isValidObjectId(friendId)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
 
     const friendRequest = await Friend.findOne({
       userId: friendId,
@@ -70,6 +83,13 @@ router.post("/accept", auth, async (req, res) => {
     friendRequest.status = "accepted";
     await friendRequest.save();
 
+    await Notification.create({
+      userId: friendId,
+      title: "Friend Request Accepted",
+      message: `${req.user.username} accepted your friend request!`,
+      type: "friend"
+    });
+
     res.json({ message: "Friend request accepted successfully" });
   } catch (error) {
     console.error("Accept friend request error:", error);
@@ -77,16 +97,25 @@ router.post("/accept", auth, async (req, res) => {
   }
 });
 
-// Reject friend request
 router.post("/reject", auth, async (req, res) => {
   try {
     const { friendId } = req.body;
+    if (!friendId) {
+      return res.status(400).json({ message: "Friend ID is required" });
+    }
+    if (!isValidObjectId(friendId)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
 
-    await Friend.findOneAndDelete({
+    const deleted = await Friend.findOneAndDelete({
       userId: friendId,
       friendId: req.user._id,
       status: "pending",
     });
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Friend request not found" });
+    }
 
     res.json({ message: "Friend request rejected successfully" });
   } catch (error) {
@@ -95,17 +124,26 @@ router.post("/reject", auth, async (req, res) => {
   }
 });
 
-// Remove friend
 router.delete("/remove", auth, async (req, res) => {
   try {
     const { friendId } = req.body;
+    if (!friendId) {
+      return res.status(400).json({ message: "Friend ID is required" });
+    }
+    if (!isValidObjectId(friendId)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
 
-    await Friend.findOneAndDelete({
+    const deleted = await Friend.findOneAndDelete({
       $or: [
         { userId: req.user._id, friendId, status: "accepted" },
         { userId: friendId, friendId: req.user._id, status: "accepted" },
       ],
     });
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Friendship not found" });
+    }
 
     res.json({ message: "Friend removed successfully" });
   } catch (error) {
@@ -114,7 +152,6 @@ router.delete("/remove", auth, async (req, res) => {
   }
 });
 
-// Get friends list
 router.get("/", auth, async (req, res) => {
   try {
     const friends = await Friend.find({
@@ -124,7 +161,6 @@ router.get("/", auth, async (req, res) => {
       ],
     }).populate("userId friendId");
 
-    // Format friends list
     const formattedFriends = friends.map((f) => {
       const friend =
         f.userId._id.toString() === req.user._id.toString()
@@ -140,7 +176,6 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-// Get pending friend requests (incoming and outgoing)
 router.get("/pending", auth, async (req, res) => {
   try {
     const incomingRequests = await Friend.find({
@@ -163,16 +198,25 @@ router.get("/pending", auth, async (req, res) => {
   }
 });
 
-// Cancel outgoing friend request
 router.delete("/cancel", auth, async (req, res) => {
   try {
     const { friendId } = req.body;
+    if (!friendId) {
+      return res.status(400).json({ message: "Friend ID is required" });
+    }
+    if (!isValidObjectId(friendId)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
 
-    await Friend.findOneAndDelete({
+    const deleted = await Friend.findOneAndDelete({
       userId: req.user._id,
       friendId,
       status: "pending",
     });
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Friend request not found" });
+    }
 
     res.json({ message: "Friend request cancelled successfully" });
   } catch (error) {

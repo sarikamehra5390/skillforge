@@ -4,32 +4,38 @@ import { ArrowLeft, Bell, Mail, Flame, Trophy, Trees } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import useAuthStore from "../store/useAuthStore";
-import api from "../api/axios";
 import GlassCard from "../components/common/GlassCard";
 import Button from "../components/common/Button";
 
+const defaultSettings = {
+  dailyReminders: true,
+  friendNotifications: true,
+  achievementNotifications: true,
+  streakNotifications: true,
+  gardenNotifications: true,
+  emailNotifications: false,
+};
+
 const NotificationSettings = () => {
-  const { user, updateUser } = useAuthStore();
+  const { user, updateProfile } = useAuthStore();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [settings, setSettings] = useState(user?.notificationSettings || {
-    dailyReminders: true,
-    friendNotifications: true,
-    achievementNotifications: true,
-    gardenNotifications: true,
-    emailNotifications: false,
-  });
+  const [settings, setSettings] = useState({ ...defaultSettings, ...(user?.notificationSettings || {}) });
+  const [hasChanges, setHasChanges] = useState(false);
 
   const handleToggle = (key) => {
     setSettings({ ...settings, [key]: !settings[key] });
+    setHasChanges(true);
   };
 
   const handleSave = async () => {
     setLoading(true);
     try {
-      const res = await api.put("/users/profile", { notificationSettings: settings });
-      updateUser(res.data);
-      toast.success("Notification settings saved!");
+      const success = await updateProfile({ notificationSettings: settings });
+      if (success) {
+        toast.success("Notification settings saved!");
+        setHasChanges(false);
+      }
     } catch (err) {
       toast.error("Failed to save settings");
     } finally {

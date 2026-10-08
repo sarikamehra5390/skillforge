@@ -9,25 +9,46 @@ const useFriendsStore = create((set, get) => ({
   searchResults: [],
   activityFeed: [],
   loading: false,
+  _fetchFriendsPromise: null,
+  _fetchPendingPromise: null,
+  _fetchActivityPromise: null,
+  _searchUsersPromise: null,
 
   fetchFriends: async () => {
-    set({ loading: true });
-    try {
-      const res = await api.get("/friends");
-      set({ friends: res.data, loading: false });
-    } catch (error) {
-      console.error("Failed to fetch friends:", error);
-      set({ loading: false });
+    const existing = get()._fetchFriendsPromise;
+    if (existing) {
+      return existing;
     }
+    set({ loading: true });
+    const promise = (async () => {
+      try {
+        const res = await api.get("/friends");
+        set({ friends: res.data, loading: false, _fetchFriendsPromise: null });
+      } catch (error) {
+        console.error("Failed to fetch friends:", error);
+        set({ loading: false, _fetchFriendsPromise: null });
+      }
+    })();
+    set({ _fetchFriendsPromise: promise });
+    return promise;
   },
 
   fetchPendingRequests: async () => {
-    try {
-      const res = await api.get("/friends/pending");
-      set({ incomingRequests: res.data.incoming || [], outgoingRequests: res.data.outgoing || [] });
-    } catch (error) {
-      console.error("Failed to fetch pending requests:", error);
+    const existing = get()._fetchPendingPromise;
+    if (existing) {
+      return existing;
     }
+    const promise = (async () => {
+      try {
+        const res = await api.get("/friends/pending");
+        set({ incomingRequests: res.data.incoming || [], outgoingRequests: res.data.outgoing || [], _fetchPendingPromise: null });
+      } catch (error) {
+        console.error("Failed to fetch pending requests:", error);
+        set({ _fetchPendingPromise: null });
+      }
+    })();
+    set({ _fetchPendingPromise: promise });
+    return promise;
   },
 
   searchUsers: async (query) => {
@@ -35,11 +56,40 @@ const useFriendsStore = create((set, get) => ({
       set({ searchResults: [] });
       return;
     }
+    const existing = get()._searchUsersPromise;
+    if (existing) {
+      return existing;
+    }
+    const promise = (async () => {
+      try {
+        const res = await api.get(`/users/search?q=${encodeURIComponent(query)}`);
+        set({ searchResults: res.data, _searchUsersPromise: null });
+      } catch (error) {
+        console.error("Failed to search users:", error);
+        set({ _searchUsersPromise: null });
+      }
+    })();
+    set({ _searchUsersPromise: promise });
+    return promise;
+  },
+
+  fetchPublicProfile: async (userId) => {
     try {
-      const res = await api.get(`/users/search?q=${encodeURIComponent(query)}`);
-      set({ searchResults: res.data });
+      const res = await api.get(`/users/${userId}`);
+      return res.data;
     } catch (error) {
-      console.error("Failed to search users:", error);
+      console.error("Failed to fetch public profile:", error);
+      throw error;
+    }
+  },
+
+  fetchReactions: async (userId) => {
+    try {
+      const res = await api.get(`/reactions/${userId}`);
+      return res.data;
+    } catch (error) {
+      console.error("Failed to fetch reactions:", error);
+      throw error;
     }
   },
 
@@ -100,12 +150,21 @@ const useFriendsStore = create((set, get) => ({
   },
 
   fetchActivityFeed: async () => {
-    try {
-      const res = await api.get("/activity/feed");
-      set({ activityFeed: res.data });
-    } catch (error) {
-      console.error("Failed to fetch activity feed:", error);
+    const existing = get()._fetchActivityPromise;
+    if (existing) {
+      return existing;
     }
+    const promise = (async () => {
+      try {
+        const res = await api.get("/activity/feed");
+        set({ activityFeed: res.data, _fetchActivityPromise: null });
+      } catch (error) {
+        console.error("Failed to fetch activity feed:", error);
+        set({ _fetchActivityPromise: null });
+      }
+    })();
+    set({ _fetchActivityPromise: promise });
+    return promise;
   },
 
   sendReaction: async (toUserId, type) => {

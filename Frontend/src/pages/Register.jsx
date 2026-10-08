@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,6 +26,13 @@ const Register = () => {
   const registerUser = useAuthStore((state) => state.register);
   const loading = useAuthStore((state) => state.loading);
   const error = useAuthStore((state) => state.error);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const {
     register,
@@ -40,7 +47,13 @@ const Register = () => {
     const success = await registerUser({ username, email, password });
     if (success) {
       toast.success('Your journey begins now. Welcome to the Forge.');
-      navigate('/');
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect');
+      if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+        navigate(redirect, { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } else {
       toast.error(error || 'The forge is busy. Please try again.');
     }

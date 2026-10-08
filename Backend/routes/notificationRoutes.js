@@ -1,7 +1,10 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Notification = require("../models/Notification");
 const auth = require("../middleware/auth");
 const router = express.Router();
+
+const { isValidObjectId } = mongoose.Types;
 
 // Get all notifications for user
 router.get("/", auth, async (req, res) => {
@@ -17,6 +20,9 @@ router.get("/", auth, async (req, res) => {
 // Mark notification as read
 router.put("/:id/read", auth, async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
     const notification = await Notification.findOneAndUpdate(
       { _id: req.params.id, userId: req.user._id },
       { read: true },
@@ -47,6 +53,9 @@ router.put("/mark-all-read", auth, async (req, res) => {
 // Delete notification
 router.delete("/:id", auth, async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
     const notification = await Notification.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
     if (!notification) return res.status(404).json({ message: "Notification not found" });
     res.json({ message: "Notification deleted successfully" });

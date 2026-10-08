@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Session = require("../models/Session");
 const Skill = require("../models/Skill");
 const User = require("../models/User");
@@ -8,7 +9,6 @@ const auth = require("../middleware/auth");
 const { calculateLevel, calculateCurrentStreak, ACHIEVEMENTS } = require("../utils/gamification");
 const router = express.Router();
 
-// Get all sessions for current user
 router.get("/", auth, async (req, res) => {
   try {
     const sessions = await Session.find({ userId: req.user._id }).sort({ completedAt: -1 });
@@ -19,15 +19,21 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-// Add new session
 router.post("/", auth, async (req, res) => {
   try {
     const { skillId, duration, notes } = req.body;
-    
+
+    if (!mongoose.Types.ObjectId.isValid(skillId)) {
+      return res.status(400).json({ message: "Invalid skillId" });
+    }
+
+    if (!Number.isInteger(duration) || duration < 1 || duration > 480) {
+      return res.status(400).json({ message: "Duration must be an integer between 1 and 480 minutes" });
+    }
+
     const skill = await Skill.findOne({ _id: skillId, userId: req.user._id });
     if (!skill) return res.status(404).json({ message: "Skill not found" });
 
-    // XP formula: 1 XP per 1 minute
     const xpGained = duration;
     
     const session = new Session({
@@ -41,34 +47,30 @@ router.post("/", auth, async (req, res) => {
 
     const newSession = await session.save();
 
-    // Update Skill progress and total sessions
     skill.totalSessions += 1;
     skill.lastPracticed = new Date();
-    // Simple progress logic: +2% per session, max 100
     skill.progress = Math.min(100, skill.progress + 2);
+    const skillSessions = await Session.find({ skillId: skill._id, userId: req.user._id });
+    const totalSkillMinutes = skillSessions.reduce((a, s) => a + (s.duration || 0), 0);
+    skill.totalMinutes = totalSkillMinutes;
     await skill.save();
 
-    // Update User
     const user = req.user;
     user.xp += xpGained;
     const oldLevel = user.level;
     
-    // Calculate new level
     const newLevel = calculateLevel(user.xp);
     user.level = newLevel;
 
-    // Get all user sessions to calculate streak
     const allSessions = await Session.find({ userId: user._id });
     const newStreak = calculateCurrentStreak(allSessions);
     user.streak = newStreak;
     user.lastPracticeDate = new Date();
 
-    // Update longest streak
     if (user.streak > (user.longestStreak || 0)) {
       user.longestStreak = user.streak;
     }
 
-    // Check for new achievements to unlock
     const newUnlockedAchievements = [];
     ACHIEVEMENTS.forEach(achievement => {
       if (user.xp >= achievement.xpRequired && !user.unlockedAchievements.includes(achievement.id)) {
@@ -79,7 +81,6 @@ router.post("/", auth, async (req, res) => {
 
     await user.save();
 
-    // Create notifications
     if (newLevel > oldLevel) {
       await Notification.create({
         userId: user._id,
@@ -87,7 +88,6 @@ router.post("/", auth, async (req, res) => {
         message: `You reached Level ${newLevel}!`,
         type: "levelup"
       });
-      // Create activity for level up
       await Activity.create({
         userId: user._id,
         type: "level",
@@ -103,7 +103,6 @@ router.post("/", auth, async (req, res) => {
         message: achievement.title,
         type: "achievement"
       });
-      // Create activity for achievement
       await Activity.create({
         userId: user._id,
         type: "achievement",
@@ -112,7 +111,6 @@ router.post("/", auth, async (req, res) => {
       });
     }
 
-    // Create activity for session
     await Activity.create({
       userId: user._id,
       type: "session",
@@ -120,8 +118,13 @@ router.post("/", auth, async (req, res) => {
       metadata: { skillId, skillName: skill.name, duration },
     });
 
-    // If it's a streak milestone
     if (newStreak > 0 && newStreak % 7 === 0) {
+      await Notification.create({
+        userId: user._id,
+        title: "Streak Milestone!",
+        message: `You reached a ${newStreak} day streak!`,
+        type: "streak"
+      });
       await Activity.create({
         userId: user._id,
         type: "streak",
@@ -141,6 +144,96 @@ router.post("/", auth, async (req, res) => {
   } catch (error) {
     console.error("POST SESSION ERROR:", error);
     res.status(400).json({ message: error.message });
+  }
+});
+
+router.put("/:id", auth, async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+    const session = await Session.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!session) return res.status(404).json({ message: "Session not found" });
+
+    const { duration, notes } = req.body;
+    const oldDuration = session.duration || 0;
+
+    let newDuration = oldDuration;
+    if (duration !== undefined) {
+      if (!Number.isInteger(duration) || duration < 1 || duration > 480) {
+        return res.status(400).json({ message: "Duration must be an integer between 1 and 480 minutes" });
+      }
+      newDuration = duration;
+    }
+    const durationDelta = newDuration - oldDuration;
+
+    if (durationDelta !== 0) {
+      const user = req.user;
+      user.xp = Math.max(0, user.xp + durationDelta);
+      user.level = calculateLevel(user.xp);
+      const allSessions = await Session.find({ userId: user._id });
+      const newStreak = calculateCurrentStreak(allSessions);
+      user.streak = Math.max(user.streak, newStreak);
+      await user.save();
+
+      if (session.skillId) {
+        const skill = await Skill.findOne({ _id: session.skillId, userId: req.user._id });
+        if (skill) {
+          const skillSessions = await Session.find({ skillId: skill._id, userId: req.user._id, _id: { $ne: session._id } });
+          const totalSkillMinutes = skillSessions.reduce((a, s) => a + (s.duration || 0), 0) + newDuration;
+          skill.totalMinutes = totalSkillMinutes;
+          await skill.save();
+        }
+      }
+    }
+
+    session.duration = newDuration;
+    session.xpGained = newDuration;
+    if (notes !== undefined) session.notes = notes;
+    session.completedAt = session.completedAt || new Date();
+
+    const updated = await session.save();
+    res.json(updated);
+  } catch (error) {
+    console.error("PUT SESSION ERROR:", error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+    const session = await Session.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!session) return res.status(404).json({ message: "Session not found" });
+
+    const duration = session.duration || 0;
+
+    if (session.skillId) {
+      const skill = await Skill.findOne({ _id: session.skillId, userId: req.user._id });
+      if (skill) {
+        const remainingSessions = await Session.countDocuments({ skillId: skill._id, userId: req.user._id, _id: { $ne: session._id } });
+        skill.totalSessions = Math.max(0, remainingSessions);
+        skill.totalMinutes = Math.max(0, (skill.totalMinutes || 0) - duration);
+        skill.progress = Math.max(0, skill.progress - 2);
+        await skill.save();
+      }
+    }
+
+    await session.deleteOne();
+
+    const user = req.user;
+    user.xp = Math.max(0, user.xp - duration);
+    user.level = calculateLevel(user.xp);
+    const allSessions = await Session.find({ userId: user._id });
+    user.streak = calculateCurrentStreak(allSessions);
+    await user.save();
+
+    res.json({ message: "Session deleted" });
+  } catch (error) {
+    console.error("DELETE SESSION ERROR:", error);
+    res.status(500).json({ message: error.message });
   }
 });
 

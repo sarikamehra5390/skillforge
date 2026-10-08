@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,6 +21,13 @@ const Login = () => {
   const login = useAuthStore((state) => state.login);
   const loading = useAuthStore((state) => state.loading);
   const error = useAuthStore((state) => state.error);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const {
     register,
@@ -34,7 +41,13 @@ const Login = () => {
     const success = await login(data);
     if (success) {
       toast.success('Welcome back to your ritual.');
-      navigate('/');
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect');
+      if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+        navigate(redirect, { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } else {
       toast.error(error || 'Invalid credentials. Please try again.');
     }
@@ -77,11 +90,6 @@ const Login = () => {
                 {...register('password')}
                 error={errors.password?.message}
               />
-              <div className="flex justify-end">
-                <button type="button" className="text-xs font-bold transition-colors uppercase tracking-widest" style={{ color: 'var(--text-secondary)' }}>
-                  Forgot path?
-                </button>
-              </div>
             </div>
 
             <Button

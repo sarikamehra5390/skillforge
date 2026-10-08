@@ -1,25 +1,33 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Mood = require("../models/Mood");
 const User = require("../models/User");
 const auth = require("../middleware/auth");
 const router = express.Router();
 
-// Check if user has checked in today
+const { isValidObjectId } = mongoose.Types;
+
+const VALID_MOODS = ['motivated', 'calm', 'tired', 'focused'];
+
+const startOfDay = (d = new Date()) => {
+  const date = new Date(d);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
 router.get("/check", auth, async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = startOfDay();
     
     const existingMood = await Mood.findOne({
       userId: req.user._id,
-      date: { $gte: today }
+      date: today
     });
 
     const lastCheckIn = req.user.lastCheckIn;
     let hasCheckedInToday = false;
     if (lastCheckIn) {
-      const lastCheckInDate = new Date(lastCheckIn);
-      lastCheckInDate.setHours(0, 0, 0, 0);
+      const lastCheckInDate = startOfDay(lastCheckIn);
       hasCheckedInToday = lastCheckInDate.getTime() === today.getTime();
     }
 
@@ -30,42 +38,41 @@ router.get("/check", auth, async (req, res) => {
   }
 });
 
-// Save today's mood
 router.post("/", auth, async (req, res) => {
   try {
     const { mood } = req.body;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    if (!VALID_MOODS.includes(mood)) {
+      return res.status(400).json({ message: `Invalid mood value. Must be one of: ${VALID_MOODS.join(", ")}` });
+    }
 
-    // Remove any existing mood for today
-    await Mood.deleteMany({
-      userId: req.user._id,
-      date: { $gte: today }
-    });
+    const today = startOfDay();
 
-    const newMood = new Mood({
-      userId: req.user._id,
-      mood
-    });
+    let moodDoc = await Mood.findOne({ userId: req.user._id, date: today });
+    if (moodDoc) {
+      moodDoc.mood = mood;
+    } else {
+      moodDoc = new Mood({
+        userId: req.user._id,
+        mood,
+        date: today
+      });
+    }
+    const savedMood = await moodDoc.save();
 
-    await newMood.save();
-
-    // Update user's lastCheckIn
     await User.findByIdAndUpdate(
       req.user._id,
       { lastCheckIn: new Date() },
       { new: true }
     );
 
-    res.status(201).json(newMood);
+    res.status(201).json(savedMood);
   } catch (error) {
     console.error("Save mood error:", error);
     res.status(400).json({ message: error.message });
   }
 });
 
-// Get mood history
 router.get("/history", auth, async (req, res) => {
   try {
     const moods = await Mood.find({ userId: req.user._id }).sort({ date: -1 });

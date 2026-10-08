@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from 'sonner';
 
 import Dashboard from "./pages/Dashboard";
@@ -15,6 +15,7 @@ import FriendProfile from "./pages/FriendProfile";
 import CommunityGarden from "./pages/CommunityGarden";
 import ManageAccount from "./pages/ManageAccount";
 import NotificationSettings from "./pages/NotificationSettings";
+import NotFound from "./pages/NotFound";
 
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./components/common/ProtectedRoute";
@@ -28,113 +29,111 @@ function App() {
         <BrowserRouter>
           <Toaster position="top-right" theme="dark" closeButton richColors />
           <Routes>
-          {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-        {/* Protected Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route
-            path="/"
-            element={
-              <MainLayout>
-                <Dashboard />
-              </MainLayout>
-            }
-          />
-          <Route
-            path="/skills"
-            element={
-              <MainLayout>
-                <Skills />
-              </MainLayout>
-            }
-          />
-          <Route
-            path="/sessions"
-            element={
-              <MainLayout>
-                <Sessions />
-              </MainLayout>
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <MainLayout>
-                <Analytics />
-              </MainLayout>
-            }
-          />
-          <Route
-            path="/achievements"
-            element={
-              <MainLayout>
-                <Achievements />
-              </MainLayout>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <MainLayout>
-                <Profile />
-              </MainLayout>
-            }
-          />
-          <Route
-            path="/friends"
-            element={
-              <MainLayout>
-                <Friends />
-              </MainLayout>
-            }
-          />
-          <Route
-            path="/search"
-            element={
-              <MainLayout>
-                <Search />
-              </MainLayout>
-            }
-          />
-          <Route
-            path="/friend/:friendId"
-            element={
-              <MainLayout>
-                <FriendProfile />
-              </MainLayout>
-            }
-          />
-          <Route
-            path="/garden"
-            element={
-              <MainLayout>
-                <CommunityGarden />
-              </MainLayout>
-            }
-          />
-          <Route
-            path="/account"
-            element={
-              <MainLayout>
-                <ManageAccount />
-              </MainLayout>
-            }
-          />
-          <Route
-            path="/notifications"
-            element={
-              <MainLayout>
-                <NotificationSettings />
-              </MainLayout>
-            }
-          />
-        </Route>
+            <Route element={<ProtectedRoute />}>
+              <Route
+                path="/"
+                element={
+                  <MainLayout>
+                    <Dashboard />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/skills"
+                element={
+                  <MainLayout>
+                    <Skills />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/sessions"
+                element={
+                  <MainLayout>
+                    <Sessions />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <MainLayout>
+                    <Analytics />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/achievements"
+                element={
+                  <MainLayout>
+                    <Achievements />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <MainLayout>
+                    <Profile />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/friends"
+                element={
+                  <MainLayout>
+                    <Friends />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/search"
+                element={
+                  <MainLayout>
+                    <Search />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/friend/:friendId"
+                element={
+                  <MainLayout>
+                    <FriendProfile />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/garden"
+                element={
+                  <MainLayout>
+                    <CommunityGarden />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/account"
+                element={
+                  <MainLayout>
+                    <ManageAccount />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/notifications"
+                element={
+                  <MainLayout>
+                    <NotificationSettings />
+                  </MainLayout>
+                }
+              />
+            </Route>
 
-        {/* Catch all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+            <Route path="/404" element={<NotFound />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </BrowserRouter>
       </TreeProvider>
     </ThemeProvider>

@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
@@ -8,11 +9,22 @@ const auth = require("../middleware/auth");
 const { calculateCurrentStreak } = require("../utils/gamification");
 const router = express.Router();
 
+const { isValidObjectId } = mongoose.Types;
+
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ALLOWED_NOTIFICATION_KEYS = [
+  "dailyReminders",
+  "friendNotifications",
+  "achievementNotifications",
+  "gardenNotifications",
+  "emailNotifications",
+];
+
 router.get("/test", (req, res) => {
   res.json({ message: "User Route Working" });
 });
 
-// Register
 router.post("/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -21,7 +33,18 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ success: false, message: "Please provide all fields" });
     }
 
-    // Use try-catch specifically for the creation to handle unique constraint errors
+    if (typeof username !== "string" || username.trim().length === 0) {
+      return res.status(400).json({ success: false, message: "Username must be a non-empty string" });
+    }
+
+    if (typeof email !== "string" || !EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ success: false, message: "Invalid email format" });
+    }
+
+    if (typeof password !== "string" || password.length < 6) {
+      return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+    }
+
     try {
       const existingEmail = await User.findOne({ email });
       if (existingEmail) {
@@ -43,19 +66,21 @@ router.post("/register", async (req, res) => {
         streak: 0
       });
 
-      // Create default sanctuary settings for new user
       const sanctuarySettings = await SanctuarySettings.create({
         userId: user._id,
         theme: "classic",
         treeType: "sprout",
-        companion: null, // None
+        companion: null,
         music: ["fireflies"],
         decorations: []
       });
 
       console.log(`New user created: ${email}`);
 
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "secret", { expiresIn: "7d" });
+      if (!process.env.JWT_SECRET) {
+        throw new Error("JWT_SECRET is not configured on server");
+      }
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
       res.status(201).json({
         success: true,
@@ -78,7 +103,7 @@ router.post("/register", async (req, res) => {
           message: `${field.charAt(0).toUpperCase() + field.slice(1)} is already in use.` 
         });
       }
-      throw innerError; // Re-throw for outer catch
+      throw innerError;
     }
   } catch (error) {
     console.error("REGISTER ERROR:", error);
@@ -86,7 +111,6 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// Login
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -95,25 +119,31 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ success: false, message: "Please provide email and password" });
     }
 
+    if (typeof email !== "string" || !EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ success: false, message: "Invalid email format" });
+    }
+
     const user = await User.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    // Get or create sanctuary settings
     let sanctuarySettings = await SanctuarySettings.findOne({ userId: user._id });
     if (!sanctuarySettings) {
       sanctuarySettings = await SanctuarySettings.create({
         userId: user._id,
         theme: "classic",
         treeType: "sprout",
-        companion: null, // None
+        companion: null,
         music: ["fireflies"],
         decorations: []
       });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "secret", { expiresIn: "7d" });
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not configured on server");
+    }
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
     res.status(200).json({
       success: true,
@@ -134,7 +164,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Get Profile
 router.get("/profile", auth, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
@@ -149,20 +178,18 @@ router.get("/profile", auth, async (req, res) => {
       await user.save();
     }
 
-    // Get or create sanctuary settings
     let sanctuarySettings = await SanctuarySettings.findOne({ userId: user._id });
     if (!sanctuarySettings) {
       sanctuarySettings = await SanctuarySettings.create({
         userId: user._id,
         theme: "classic",
         treeType: "sprout",
-        companion: null, // None
+        companion: null,
         music: ["fireflies"],
         decorations: []
       });
     }
     
-    // Combine user with sanctuary settings
     const userWithSettings = {
       ...user.toObject(),
       sanctuarySettings
@@ -175,26 +202,26 @@ router.get("/profile", auth, async (req, res) => {
   }
 });
 
-// Search users
 router.get("/search", auth, async (req, res) => {
   try {
     const searchTerm = req.query.q || req.query.query;
     if (!searchTerm) {
-      return res.status(200).json([]); // Return empty if no query
+      return res.status(200).json([]);
     }
+
+    const escapedTerm = escapeRegex(String(searchTerm));
 
     const users = await User.find({
       $and: [
         { _id: { $ne: req.user._id } },
         {
           $or: [
-            { username: { $regex: searchTerm, $options: "i" } },
-            { email: { $regex: searchTerm, $options: "i" } },
-            { displayName: { $regex: searchTerm, $options: "i" } },
+            { username: { $regex: escapedTerm, $options: "i" } },
+            { displayName: { $regex: escapedTerm, $options: "i" } },
           ],
         },
       ],
-    }).select("-password");
+    }).select("username displayName avatar xp level streak longestStreak lastPracticeDate gardenId");
 
     res.json(users);
   } catch (error) {
@@ -203,28 +230,43 @@ router.get("/search", auth, async (req, res) => {
   }
 });
 
-// Get public user profile
-router.get("/:userId", auth, async (req, res) => {
+router.get("/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(userId).select("-password");
+    if (!isValidObjectId(userId)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+    const user = await User.findById(userId).select("-password -email");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.json(user);
+    const plainUser = user.toObject();
+    res.json({
+      username: plainUser.username,
+      displayName: plainUser.displayName,
+      avatar: plainUser.avatar,
+      bio: plainUser.bio,
+      level: plainUser.level,
+      xp: plainUser.xp,
+      streak: plainUser.streak,
+      unlockedAchievements: plainUser.unlockedAchievements,
+      createdAt: plainUser.createdAt,
+    });
   } catch (error) {
     console.error("Get public profile error:", error);
     res.status(500).json({ message: error.message });
   }
 });
 
-// Update profile
 router.put("/profile", auth, async (req, res) => {
   try {
     const { username, email, password, avatar, displayName, notificationSettings } = req.body;
     const updateData = {};
 
     if (username) {
+      if (typeof username !== "string" || username.trim().length === 0) {
+        return res.status(400).json({ message: "Username must be a non-empty string" });
+      }
       const existingUsername = await User.findOne({ 
         username, 
         _id: { $ne: req.user._id } 
@@ -235,6 +277,9 @@ router.put("/profile", auth, async (req, res) => {
       updateData.username = username;
     }
     if (email) {
+      if (typeof email !== "string" || !EMAIL_REGEX.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
       const existingEmail = await User.findOne({ 
         email, 
         _id: { $ne: req.user._id } 
@@ -245,12 +290,33 @@ router.put("/profile", auth, async (req, res) => {
       updateData.email = email;
     }
     if (password) {
+      if (typeof password !== "string" || password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
       const hashedPassword = await bcrypt.hash(password, 10);
       updateData.password = hashedPassword;
     }
     if (avatar) updateData.avatar = avatar;
     if (displayName !== undefined) updateData.displayName = displayName;
-    if (notificationSettings) updateData.notificationSettings = notificationSettings;
+    if (notificationSettings !== undefined) {
+      if (typeof notificationSettings !== "object" || notificationSettings === null || Array.isArray(notificationSettings)) {
+        return res.status(400).json({ message: "notificationSettings must be an object" });
+      }
+      const validatedSettings = {};
+      for (const key of ALLOWED_NOTIFICATION_KEYS) {
+        if (notificationSettings[key] !== undefined) {
+          if (typeof notificationSettings[key] !== "boolean") {
+            return res.status(400).json({ message: `notificationSettings.${key} must be a boolean` });
+          }
+          validatedSettings[key] = notificationSettings[key];
+        }
+      }
+      if (Object.keys(validatedSettings).length > 0) {
+        for (const [key, value] of Object.entries(validatedSettings)) {
+          updateData[`notificationSettings.${key}`] = value;
+        }
+      }
+    }
 
     const user = await User.findByIdAndUpdate(
       req.user._id, 

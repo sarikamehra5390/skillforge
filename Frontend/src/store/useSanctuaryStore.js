@@ -32,9 +32,10 @@ const useSanctuaryStore = create((set, get) => {
 
     try {
       const res = await api.put("/sanctuary", pickPersistableFields(get().settings));
-      set({ settings: res.data });
-      saveSanctuaryToStorage(res.data);
-      syncAuthSanctuarySettings(res.data);
+      const latest = get().settings;
+      set({ settings: { ...latest, ...res.data } });
+      saveSanctuaryToStorage({ ...latest, ...res.data });
+      syncAuthSanctuarySettings({ ...latest, ...res.data });
     } catch (err) {
       console.error("Failed to update sanctuary settings:", err);
     }
@@ -92,6 +93,16 @@ const useSanctuaryStore = create((set, get) => {
 
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(persistToServer, delay);
+    },
+
+    fetchPublicSanctuary: async (userId) => {
+      try {
+        const res = await api.get(`/sanctuary/${userId}`);
+        return res.data;
+      } catch (err) {
+        console.error("Failed to fetch public sanctuary:", err);
+        throw err;
+      }
     },
   };
 });

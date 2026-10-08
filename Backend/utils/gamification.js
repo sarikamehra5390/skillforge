@@ -5,7 +5,22 @@ const LEVEL_THRESHOLDS = [
   { level: 2, xp: 100 },
   { level: 3, xp: 250 },
   { level: 4, xp: 500 },
-  { level: 5, xp: 1000 }
+  { level: 5, xp: 1000 },
+  { level: 6, xp: 1500 },
+  { level: 7, xp: 2250 },
+  { level: 8, xp: 3250 },
+  { level: 9, xp: 4500 },
+  { level: 10, xp: 6000 },
+  { level: 11, xp: 8000 },
+  { level: 12, xp: 10500 },
+  { level: 13, xp: 13500 },
+  { level: 14, xp: 17000 },
+  { level: 15, xp: 21000 },
+  { level: 16, xp: 26000 },
+  { level: 17, xp: 32000 },
+  { level: 18, xp: 39000 },
+  { level: 19, xp: 47000 },
+  { level: 20, xp: 56000 }
 ];
 
 const TREE_STAGES = [

@@ -5,6 +5,7 @@ import useAuthStore from "../store/useAuthStore";
 import GlassCard from "../components/common/GlassCard";
 import Input from "../components/common/Input";
 import Button from "../components/common/Button";
+import { toast } from 'sonner';
 
 const ManageAccount = () => {
   const { user, updateProfile, loading } = useAuthStore();
@@ -20,6 +21,7 @@ const ManageAccount = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
+      toast.error("Passwords don't match!");
       return;
     }
 

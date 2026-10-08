@@ -23,6 +23,10 @@ const skillSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    totalMinutes: {
+      type: Number,
+      default: 0
+    },
     lastPracticed: {
       type: Date
     }
@@ -31,5 +35,7 @@ const skillSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+skillSchema.index({ userId: 1, name: 1 }, { unique: true });
 
 module.exports = mongoose.model("Skill", skillSchema);

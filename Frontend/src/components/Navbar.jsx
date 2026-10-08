@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, Search, Flame, Zap, Award } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import useAppStore from '../store/useAppStore';
 import useSanctuaryStore from '../store/useSanctuaryStore';
@@ -10,6 +11,7 @@ import ProfileDropdown from './ProfileDropdown';
 import NotificationPanel from './NotificationPanel';
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const user = useAuthStore(state => state.user);
   const notifications = useAppStore(state => state.notifications);
   const fetchNotifications = useAppStore(state => state.fetchNotifications);
@@ -33,31 +35,26 @@ const Navbar = () => {
         borderColor: 'var(--border)'
       }}
     >
-      {/* Search Bar */}
+      {/* Search Button */}
       <div className="flex-1 max-w-md hidden md:block">
-        <div className="relative group">
-          <Search 
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors" 
-            style={{ color: 'var(--text-secondary)' }}
-          />
-          <input 
-            type="text" 
-            placeholder="Search the sanctuary... (⌘K)" 
-            className="w-full rounded-2xl py-2.5 pl-12 pr-4 text-sm focus:outline-none transition-all"
-            style={{
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border)',
-              color: 'var(--text)',
-              '::placeholder': { color: 'var(--text-secondary)' }
-            }}
-          />
-        </div>
+        <button
+          onClick={() => navigate('/search')}
+          className="relative group w-full flex items-center gap-3 rounded-2xl py-2.5 pl-4 pr-4 text-sm focus:outline-none transition-all hover:opacity-80 text-left"
+          style={{
+            backgroundColor: 'var(--surface)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          <Search className="w-4 h-4" />
+          <span>Search (⌘K)</span>
+        </button>
       </div>
 
       {/* User Stats & Actions */}
       <div className="flex items-center gap-10">
         {/* Streak */}
-        <div className="flex items-center gap-3 group cursor-help px-4 py-2 rounded-2xl transition-all" style={{ hover: { backgroundColor: 'var(--accent-light)' } }} title="Your Daily Ritual Streak">
+        <div className="flex items-center gap-3 group cursor-help px-4 py-2 rounded-2xl transition-all hover:opacity-80" title="Your Daily Ritual Streak">
           <Flame size={18} className="group-hover:scale-110 transition-transform" fill="currentColor" style={{ color: 'var(--accent)' }} />
           <span className="text-sm font-black tracking-tight" style={{ color: 'var(--text)' }}>{user?.streak || 0}</span>
         </div>

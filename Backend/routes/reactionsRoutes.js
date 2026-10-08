@@ -1,12 +1,18 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Reaction = require("../models/Reaction");
+const User = require("../models/User");
 const auth = require("../middleware/auth");
 const router = express.Router();
 
-// Get reactions for a user
+const VALID_REACTION_TYPES = ["flower", "star", "fire"];
+
 router.get("/:userId", auth, async (req, res) => {
   try {
     const { userId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -15,15 +21,15 @@ router.get("/:userId", auth, async (req, res) => {
       createdAt: { $gte: today },
     });
 
-    // Count reactions by type
-    const counts = {
+    const counts = reactions.reduce((acc, r) => {
+      if (acc[r.type] !== undefined) {
+        acc[r.type]++;
+      }
+      return acc;
+    }, {
       flower: 0,
       star: 0,
       fire: 0,
-    };
-
-    reactions.forEach((r) => {
-      counts[r.type]++;
     });
 
     res.json(counts);
@@ -33,12 +39,31 @@ router.get("/:userId", auth, async (req, res) => {
   }
 });
 
-// Leave a reaction
 router.post("/", auth, async (req, res) => {
   try {
     const { toUserId, type } = req.body;
 
-    // Check daily limit
+    if (!toUserId) {
+      return res.status(400).json({ message: "toUserId is required" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(toUserId)) {
+      return res.status(400).json({ message: "Invalid toUserId" });
+    }
+
+    if (req.user._id.toString() === toUserId.toString()) {
+      return res.status(400).json({ message: "Cannot react to your own profile" });
+    }
+
+    if (!VALID_REACTION_TYPES.includes(type)) {
+      return res.status(400).json({ message: `Invalid reaction type. Must be one of: ${VALID_REACTION_TYPES.join(", ")}` });
+    }
+
+    const targetUser = await User.findById(toUserId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "Target user not found" });
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 

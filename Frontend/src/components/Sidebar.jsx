@@ -14,7 +14,8 @@ import {
   Users,
   Sprout,
   Settings,
-  Bell
+  Bell,
+  Search as SearchIcon
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import useAuthStore from '../store/useAuthStore';
@@ -30,6 +31,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     { icon: BarChart3, label: 'Growth Journey', path: '/analytics' },
     { icon: Trophy, label: 'Milestones', path: '/achievements' },
     { icon: Users, label: 'Friends', path: '/friends' },
+    { icon: SearchIcon, label: 'Find Friends', path: '/search' },
     { icon: Sprout, label: 'Community Garden', path: '/garden' },
     { icon: Settings, label: 'Settings', path: '/account' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },

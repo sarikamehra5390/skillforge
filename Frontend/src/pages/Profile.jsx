@@ -215,12 +215,30 @@ const Profile = () => {
               Collection
             </h3>
             <div className="grid grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="aspect-square rounded-[1.25rem] bg-white/[0.03] border border-white/5 flex items-center justify-center group hover:bg-primary-500/10 hover:border-primary-400/30 transition-all duration-700 cursor-help relative overflow-hidden">
-                  <Award size={24} className="text-slate-700 group-hover:text-primary-300 group-hover:scale-110 transition-all duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent" />
-                </div>
-              ))}
+              {Array.from({ length: 6 }, (_, i) => {
+                const achievement = (user?.unlockedAchievements || [])[i];
+                if (achievement) {
+                  return (
+                    <div
+                      key={i}
+                      className="aspect-square rounded-[1.25rem] bg-primary-500/10 border border-primary-400/30 flex items-center justify-center group relative overflow-hidden cursor-help"
+                      title={typeof achievement === 'string' ? achievement : (achievement.name || achievement.title || 'Unlocked Achievement')}
+                    >
+                      <Award size={24} className="text-primary-300 scale-110" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-transparent" />
+                    </div>
+                  );
+                }
+                return (
+                  <div
+                    key={i}
+                    className="aspect-square rounded-[1.25rem] bg-white/[0.03] border border-white/5 flex items-center justify-center group relative overflow-hidden cursor-help"
+                    title="Earn achievements to fill your collection!"
+                  >
+                    <span className="text-2xl text-slate-700 group-hover:text-slate-500 transition-colors">🔒</span>
+                  </div>
+                );
+              })}
             </div>
           </GlassCard>
 

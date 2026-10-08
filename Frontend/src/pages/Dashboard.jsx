@@ -9,7 +9,8 @@ import {
   BookOpen,
   ArrowRight,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  AlertCircle
 } from 'lucide-react';
 import useDashboardStore from '../store/useDashboardStore';
 import useAuthStore from '../store/useAuthStore';
@@ -22,15 +23,29 @@ import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import Badge from '../components/common/Badge';
 import Illustration from '../components/common/Illustration';
 import LivingTree from '../components/LivingTree';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '../utils/cn';
 import { getTreeStage, calculateXPProgress } from '../utils/gamification';
+import useAppStore from '../store/useAppStore';
 
 const Dashboard = () => {
   const { user } = useAuthStore();
-  const { stats, recentActivity, loading, fetchDashboardData, skills, sessions } = useDashboardStore();
+  const { stats, recentActivity, loading, error, fetchDashboardData, skills, sessions } = useDashboardStore();
   const { activityFeed, fetchActivityFeed } = useFriendsStore();
+  const { setShowCheckInModal, checkMoodToday } = useAppStore();
   const [isWatering, setIsWatering] = useState(false);
+  const [checkedInToday, setCheckedInToday] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      const result = await checkMoodToday();
+      setCheckedInToday(result?.hasCheckedInToday || false);
+    };
+    if (user) {
+      checkStatus();
+    }
+  }, [user, checkMoodToday]);
 
   const treeStage = user ? getTreeStage(user.xp) : { name: "Seed", emoji: "🌱" };
   const xpProgress = user ? calculateXPProgress(user.xp) : { currentLevel: 1, currentXP: 0, xpNeeded: 100, progressPercentage: 0 };
@@ -48,9 +63,35 @@ const Dashboard = () => {
     return "A peaceful evening to reflect";
   };
 
+  const today = new Date().toDateString();
+  const sessionsToday = sessions.filter(s => new Date(s.completedAt).toDateString() === today);
+  const hasSessionToday = sessionsToday.length > 0;
+  const lastCheckIn = user?.lastCheckIn ? new Date(user.lastCheckIn).toDateString() : null;
+  const checkedInMoodToday = checkedInToday || (lastCheckIn === today);
+
   const missions = [
-    { id: 1, title: "Morning Watering", description: "Dedicate 20 minutes to nourish any of your skill branches", reward: "50 XP", icon: Target, color: "text-primary-400" },
-    { id: 2, title: "Journal Entry", description: "Reflect on your growth by recording today's moments in your journal", reward: "100 XP", icon: Sparkles, color: "text-warm-amber" },
+    {
+      id: 1,
+      title: "Log a Practice Session",
+      description: "Log any practice session today to nurture your skill branches",
+      reward: "10 XP",
+      icon: Target,
+      color: "text-primary-400",
+      completed: hasSessionToday,
+      buttonLabel: "Log Practice",
+      onClick: () => navigate('/sessions')
+    },
+    {
+      id: 2,
+      title: "Water the Tree",
+      description: "Check in with your mood today to keep your tree hydrated and happy",
+      reward: "5 XP",
+      icon: Sparkles,
+      color: "text-warm-amber",
+      completed: checkedInMoodToday,
+      buttonLabel: "Water Tree",
+      onClick: () => setShowCheckInModal(true)
+    },
   ];
 
   if (loading) {
@@ -66,6 +107,23 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-16 pb-24 relative">
+      {error && (
+        <GlassCard className="p-6 border-red-500/20 bg-red-500/5">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-400 shrink-0">
+              <AlertCircle size={20} />
+            </div>
+            <div className="flex-1">
+              <p className="text-white font-bold">Couldn't load your sanctuary data</p>
+              <p className="text-sm text-slate-400">{error}</p>
+            </div>
+            <Button variant="secondary" size="sm" onClick={fetchDashboardData}>
+              Retry
+            </Button>
+          </div>
+        </GlassCard>
+      )}
+
       {/* Tree of Mastery Hero */}
       <section className="relative overflow-hidden rounded-[3.5rem] border border-white/5 shadow-2xl group">
         {/* Background Gradient for mobile fallback */}
@@ -204,17 +262,34 @@ const Dashboard = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               {missions.map(mission => (
-                <GlassCard key={mission.id} className="p-10 group/card hover:bg-white/[0.04] transition-all duration-700">
+                <GlassCard key={mission.id} className="p-10 group/card hover:bg-white/[0.04] transition-all duration-700 relative overflow-hidden">
+                  {mission.completed && (
+                    <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center z-10">
+                      <span className="text-emerald-400 text-lg">✓</span>
+                    </div>
+                  )}
                   <div className="flex items-start justify-between mb-8">
-                    <div className={cn("p-5 rounded-3xl bg-white/5 group-hover/card:scale-110 transition-transform duration-700", mission.color)}>
+                    <div className={cn("p-5 rounded-3xl bg-white/5 group-hover/card:scale-110 transition-transform duration-700", mission.color, mission.completed && "opacity-50")}>
                       <mission.icon size={28} />
                     </div>
-                    <div className="px-4 py-1.5 rounded-full bg-primary-500/10 text-primary-300 text-[10px] font-black tracking-widest uppercase">
-                      {mission.reward}
+                    <div className={cn("px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase", mission.completed ? "bg-emerald-500/10 text-emerald-300" : "bg-primary-500/10 text-primary-300")}>
+                      {mission.completed ? "Claimed" : mission.reward}
                     </div>
                   </div>
-                  <h4 className="text-xl font-bold text-white mb-3 italic tracking-tight">{mission.title}</h4>
-                  <p className="text-sm text-slate-500 leading-relaxed font-medium">{mission.description}</p>
+                  <h4 className={cn("text-xl font-bold mb-3 italic tracking-tight", mission.completed ? "text-slate-500 line-through" : "text-white")}>{mission.title}</h4>
+                  <p className="text-sm text-slate-500 leading-relaxed font-medium mb-8">{mission.description}</p>
+                  <button
+                    onClick={mission.onClick}
+                    disabled={mission.completed}
+                    className={cn(
+                      "w-full px-6 py-3 rounded-2xl text-sm font-black uppercase tracking-widest transition-all duration-300",
+                      mission.completed
+                        ? "bg-slate-500/10 text-slate-500 cursor-not-allowed border border-slate-500/10"
+                        : "bg-gradient-to-r from-primary-500/20 to-warm-amber/20 text-white hover:from-primary-500/30 hover:to-warm-amber/30 border border-primary-400/20"
+                    )}
+                  >
+                    {mission.completed ? "Completed" : mission.buttonLabel}
+                  </button>
                 </GlassCard>
               ))}
             </div>
@@ -240,7 +315,7 @@ const Dashboard = () => {
                   <GlassCard key={activity._id} className="p-6">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-white font-bold italic">
-                        {activity.userId?.username?.[0]?.toUpperCase() || "?"}
+                        {(() => { const firstChar = activity.userId?.username?.charAt(0); return firstChar ? firstChar.toUpperCase() : '?'; })()}
                       </div>
                       <div>
                         <p className="text-white font-medium">{activity.description}</p>

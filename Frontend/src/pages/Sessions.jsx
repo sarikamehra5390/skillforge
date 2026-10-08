@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Calendar, History, Loader2, Clock, MessageSquare } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, History, Loader2, Clock, MessageSquare, AlertCircle, RefreshCw } from 'lucide-react';
 import api from '../api/axios';
 import SessionTimeline from '../components/sessions/SessionTimeline';
 import Button from '../components/common/Button';
@@ -8,6 +8,7 @@ import GlassCard from '../components/common/GlassCard';
 import Illustration from '../components/common/Illustration';
 import XPPopup from '../components/XPPopup';
 import useAuthStore from '../store/useAuthStore';
+import useDashboardStore from '../store/useDashboardStore';
 import { toast } from 'sonner';
 import { AnimatePresence } from 'framer-motion';
 
@@ -15,14 +16,17 @@ const Sessions = () => {
   const [sessions, setSessions] = useState([]);
   const [skills, setSkills] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [newSession, setNewSession] = useState({ skillId: '', duration: '', notes: '' });
   const [showXPPopup, setShowXPPopup] = useState(false);
   const [xpGained, setXpGained] = useState(0);
-  const { user, updateUser } = useAuthStore();
+  const { user } = useAuthStore();
+  const { createSession } = useDashboardStore();
 
   const fetchData = async () => {
+    setError(null);
     try {
       const [sessionsRes, skillsRes] = await Promise.all([
         api.get('/sessions'),
@@ -33,6 +37,7 @@ const Sessions = () => {
       setLoading(false);
     } catch (error) {
       toast.error('Failed to read your journal');
+      setError('Failed to load your journal. Please try again.');
       setLoading(false);
     }
   };
@@ -46,34 +51,26 @@ const Sessions = () => {
     if (!newSession.skillId) return toast.error('Which path did you walk today?');
     
     try {
-      const response = await api.post('/sessions', {
+      const result = await createSession({
         ...newSession,
         duration: Number(newSession.duration)
       });
       
-      toast.success(`A beautiful ritual. +${response.data.xpGained} XP`, { icon: '🌱' });
-      
-      // Update user in store
-      updateUser({
-        xp: response.data.session.xpGained + (user?.xp || 0),
-        level: response.data.newLevel,
-        streak: response.data.newStreak
-      });
+      const xpGainedVal = result?.xpGained || result?.session?.xpGained || 0;
+      toast.success(`A beautiful ritual. +${xpGainedVal} XP`, { icon: '🌱' });
 
-      // Show XP Popup
-      setXpGained(response.data.xpGained);
+      setXpGained(xpGainedVal);
       setShowXPPopup(true);
 
-      if (response.data.levelUp) {
-        toast.success(`You have evolved! Level ${response.data.newLevel}`, {
+      if (result?.levelUp) {
+        toast.success(`You have evolved! Level ${result.newLevel}`, {
           icon: '🦋',
           duration: 6000
         });
       }
 
-      // Check for new achievements
-      if (response.data.newUnlockedAchievements) {
-        response.data.newUnlockedAchievements.forEach(achievement => {
+      if (result?.newUnlockedAchievements) {
+        result.newUnlockedAchievements.forEach(achievement => {
           toast.success(`Achievement Unlocked: ${achievement.title}!`, {
             icon: '🏆',
             duration: 5000
@@ -90,7 +87,7 @@ const Sessions = () => {
   };
 
   const filteredSessions = sessions.filter(session => 
-    session.skillName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (session.skillName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (session.notes && session.notes.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -128,7 +125,7 @@ const Sessions = () => {
           <div>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mb-1">Time Lived</p>
             <p className="text-3xl font-bold text-white tracking-tighter">
-              {sessions.reduce((acc, s) => acc + s.duration, 0)}<span className="text-sm ml-1 text-slate-500 uppercase not-italic">m</span>
+              {sessions.reduce((acc, s) => acc + (typeof s.duration === 'number' ? s.duration : 0), 0)}<span className="text-sm ml-1 text-slate-500 uppercase not-italic">m</span>
             </p>
           </div>
         </GlassCard>
@@ -161,7 +158,23 @@ const Sessions = () => {
 
       {/* Timeline */}
       <div className="relative">
-        {loading ? (
+        {error ? (
+          <GlassCard className="p-8 border-red-500/20 bg-red-500/5">
+            <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+              <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-400 shrink-0">
+                <AlertCircle size={32} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-white mb-2">Journal is hard to reach</h3>
+                <p className="text-slate-400">{error}</p>
+              </div>
+              <Button onClick={fetchData} variant="secondary" className="shrink-0">
+                <RefreshCw size={16} className="mr-2" />
+                Retry
+              </Button>
+            </div>
+          </GlassCard>
+        ) : loading ? (
           <div className="flex items-center justify-center py-24">
             <div className="w-10 h-10 border-2 border-primary-500/20 border-t-primary-500 rounded-full animate-spin" />
           </div>
