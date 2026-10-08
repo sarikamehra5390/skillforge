@@ -249,7 +249,7 @@ const useAuthStore = create((set, get) => ({
         hydrateSanctuary(user);
 
         return true;
-      } catch (error) {
+      } catch {
         // The Axios interceptor may already have
         // handled an unauthorized response.
         localStorage.removeItem('token');

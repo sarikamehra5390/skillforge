@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 
 import {
   User,
@@ -33,9 +33,9 @@ const ManageAccount = () => {
   );
 
   const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    displayName: "",
+    username: user?.username || "",
+    email: user?.email || "",
+    displayName: user?.displayName || "",
     newPassword: "",
     confirmPassword: "",
   });
@@ -43,18 +43,6 @@ const ManageAccount = () => {
   // ---------------------------------------------------------
   // Sync form with authenticated user
   // ---------------------------------------------------------
-
-  useEffect(() => {
-    if (!user) return;
-
-    setFormData({
-      username: user.username || "",
-      email: user.email || "",
-      displayName: user.displayName || "",
-      newPassword: "",
-      confirmPassword: "",
-    });
-  }, [user]);
 
   // ---------------------------------------------------------
   // Input Handler

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -35,28 +35,12 @@ const NotificationSettings = () => {
 
   const [loading, setLoading] = useState(false);
 
-  const [settings, setSettings] = useState(
-    defaultSettings
-  );
-
-  const [savedSettings, setSavedSettings] =
-    useState(defaultSettings);
-
-  // ---------------------------------------------------------
-  // Sync settings with authenticated user
-  // ---------------------------------------------------------
-
-  useEffect(() => {
-    if (!user) return;
-
-    const userSettings = {
-      ...defaultSettings,
-      ...(user.notificationSettings || {}),
-    };
-
-    setSettings(userSettings);
-    setSavedSettings(userSettings);
-  }, [user]);
+  const initialSettings = {
+    ...defaultSettings,
+    ...(user?.notificationSettings || {}),
+  };
+  const [settings, setSettings] = useState(initialSettings);
+  const [savedSettings, setSavedSettings] = useState(initialSettings);
 
   // ---------------------------------------------------------
   // Detect whether anything changed

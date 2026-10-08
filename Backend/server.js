@@ -30,19 +30,33 @@ if (!process.env.MONGO_URI) {
   process.exit(1);
 }
 
+if (!process.env.JWT_SECRET) {
+  console.error("❌ JWT_SECRET is not defined in environment variables.");
+  process.exit(1);
+}
+
+if (NODE_ENV === "production") {
+  if (!process.env.FRONTEND_URL) {
+    console.error("❌ FRONTEND_URL must be configured in production.");
+    process.exit(1);
+  }
+
+  if (
+    process.env.JWT_SECRET.length < 32 ||
+    process.env.JWT_SECRET === "replace-this-with-a-long-random-secret-string"
+  ) {
+    console.error("❌ Configure a private JWT_SECRET of at least 32 characters in production.");
+    process.exit(1);
+  }
+}
+
 // ─────────────────────────────────────────────
 // CORS
 // ─────────────────────────────────────────────
 
-const corsOrigins = [
-  FRONTEND_URL,
-  "http://localhost:5173",
-  "http://localhost:5174",
-];
-
-if (NODE_ENV === "production") {
-  corsOrigins.push(/\.onrender\.com$/);
-}
+const corsOrigins = NODE_ENV === "production"
+  ? [FRONTEND_URL]
+  : [FRONTEND_URL, "http://localhost:5173", "http://localhost:5174"];
 
 app.use(
   cors({
@@ -171,13 +185,15 @@ app.use((err, req, res, next) => {
 // Database + Server Startup
 // ─────────────────────────────────────────────
 
+let httpServer;
+
 const startServer = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
 
     console.log("✅ MongoDB Connected");
 
-    app.listen(PORT, "0.0.0.0", () => {
+    httpServer = app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 SkillForge server running on 0.0.0.0:${PORT}`);
       console.log(`🌐 Allowed frontend: ${FRONTEND_URL}`);
       console.log(`📦 Environment: ${NODE_ENV}`);
@@ -213,6 +229,15 @@ const shutdown = async (signal) => {
   console.log(`\n${signal} received. Shutting down gracefully...`);
 
   try {
+    if (httpServer) {
+      await new Promise((resolve, reject) => {
+        httpServer.close((error) => {
+          if (error) reject(error);
+          else resolve();
+        });
+      });
+    }
+
     await mongoose.connection.close();
     console.log("MongoDB connection closed.");
     process.exit(0);

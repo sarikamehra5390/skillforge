@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Sprout, Trees, Leaf, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";

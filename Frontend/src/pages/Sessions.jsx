@@ -1,4 +1,5 @@
-import React, {
+import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -11,6 +12,7 @@ import {
   History,
   Clock,
   AlertCircle,
+  Loader2,
   RefreshCw,
 } from "lucide-react";
 
@@ -250,7 +252,7 @@ const Sessions = () => {
   // Close modal
   // ---------------------------------------------------------
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     if (isSubmitting) return;
 
     setIsLogModalOpen(false);
@@ -260,7 +262,7 @@ const Sessions = () => {
       duration: "",
       notes: "",
     });
-  };
+  }, [isSubmitting, setIsLogModalOpen]);
 
   // ---------------------------------------------------------
   // Escape key
@@ -289,7 +291,7 @@ const Sessions = () => {
         handleKeyDown
       );
     };
-  }, [isLogModalOpen, isSubmitting]);
+  }, [isLogModalOpen, isSubmitting, closeModal]);
 
   // ---------------------------------------------------------
   // Log session

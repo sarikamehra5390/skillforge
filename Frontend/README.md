@@ -1,16 +1,28 @@
-# React + Vite
+# SkillForge
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+SkillForge is a skill practice and progress tracking application with a React/Vite frontend and an Express/MongoDB API.
 
-Currently, two official plugins are available:
+## Local development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Install dependencies in `Backend` and `Frontend` with `npm install`.
+2. Copy `Backend/.env.example` to `Backend/.env` and set `MONGO_URI` and a private `JWT_SECRET`.
+3. Copy `Frontend/.env.example` to `Frontend/.env`. For local development it should contain `VITE_API_URL=http://localhost:5000/api`.
+4. Start the API from `Backend` with `npm run dev` (or `npm start`).
+5. Start the frontend from `Frontend` with `npm run dev`.
 
-## React Compiler
+The API listens on port `5000` by default. Its health endpoint is `GET /api/health`; user registration and login are `POST /api/users/register` and `POST /api/users/login`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+For production, set `NODE_ENV=production`, provide the deployed frontend's exact origin in `FRONTEND_URL`, and use a private `JWT_SECRET` with at least 32 characters. Set `VITE_API_URL` to the deployed API's `/api` URL before building the frontend; this value is embedded at build time. Production CORS accepts only the configured frontend origin.
 
-## Expanding the ESLint configuration
+## Frontend checks
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Run from `Frontend`:
+
+```sh
+npm run lint
+npm run build
+```
+
+## Environment variables
+
+The frontend reads `VITE_API_URL`. The backend reads `MONGO_URI`, `JWT_SECRET`, `PORT`, `FRONTEND_URL`, and `NODE_ENV`. Keep actual `.env` files private; only the example files with placeholders belong in source control.

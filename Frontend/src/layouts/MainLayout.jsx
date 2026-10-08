@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
@@ -12,9 +12,21 @@ import useAppStore from "../store/useAppStore";
 import useAuthStore from "../store/useAuthStore";
 import useSanctuaryStore from "../store/useSanctuaryStore";
 
+const fireflies = Array.from({ length: 12 }, (_, index) => ({
+  id: index,
+  duration: `${10 + Math.random() * 15}s`,
+  x: `${(Math.random() - 0.5) * 600}px`,
+  y: `${(Math.random() - 0.5) * 600}px`,
+  top: `${Math.random() * 100}%`,
+  left: `${Math.random() * 100}%`,
+  animationDelay: `${Math.random() * 10}s`,
+}));
+
 function MainLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] =
-    useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 768px)").matches
+  );
 
   const showCheckInModal = useAppStore(
     (state) => state.showCheckInModal
@@ -50,50 +62,6 @@ function MainLayout({ children }) {
   )
     ? settings.music
     : [];
-
-  // Generate firefly properties only once.
-  // This prevents them from jumping to new positions
-  // whenever MainLayout rerenders.
-  const fireflies = useMemo(
-    () =>
-      Array.from(
-        { length: 12 },
-        (_, index) => ({
-          id: index,
-          duration: `${
-            10 + Math.random() * 15
-          }s`,
-          x: `${
-            (Math.random() - 0.5) * 600
-          }px`,
-          y: `${
-            (Math.random() - 0.5) * 600
-          }px`,
-          top: `${Math.random() * 100}%`,
-          left: `${Math.random() * 100}%`,
-          animationDelay: `${
-            Math.random() * 10
-          }s`,
-        })
-      ),
-    []
-  );
-
-  // Set initial sidebar state based on viewport.
-  useEffect(() => {
-    if (
-      typeof window === "undefined"
-    ) {
-      return;
-    }
-
-    const isDesktop =
-      window.matchMedia(
-        "(min-width: 768px)"
-      ).matches;
-
-    setSidebarOpen(isDesktop);
-  }, []);
 
   // Initialize user-specific data.
   useEffect(() => {

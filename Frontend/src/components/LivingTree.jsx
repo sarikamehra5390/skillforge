@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   getTreeStage,
@@ -7,7 +7,9 @@ import {
   getEarnedFruits,
   ACHIEVEMENTS,
 } from "../utils/gamification";
-import { useTree } from "../context/TreeContext";
+import { useTree } from "../context/useTree";
+
+const EMPTY_LIST = [];
 
 const TREE_EMOJIS = {
   sprout: "🌱",
@@ -35,11 +37,11 @@ const LivingTree = ({
 
   const safeSkills = Array.isArray(skills)
     ? skills
-    : [];
+    : EMPTY_LIST;
 
   const safeSessions = Array.isArray(sessions)
     ? sessions
-    : [];
+    : EMPTY_LIST;
 
   const treeStage = getTreeStage(xp);
   const season = getCurrentSeason();

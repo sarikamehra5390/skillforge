@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import GlassCard from "./common/GlassCard";
 import useSanctuaryStore from "../store/useSanctuaryStore";
 import useAuthStore from "../store/useAuthStore";
-import { useTheme } from "../context/ThemeContext";
-import { useTree } from "../context/TreeContext";
+import { useTheme } from "../context/useTheme";
+import { useTree } from "../context/useTree";
 import { DEFAULT_SANCTUARY_SETTINGS } from "../utils/sanctuaryStorage";
 import {
   TREE_OPTIONS,
@@ -31,6 +31,11 @@ const CustomizeSanctuaryModal = () => {
   const { user } = useAuthStore();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
+  const handleClose = () => {
+    setShowConfirmDialog(false);
+    setIsModalOpen(false);
+  };
+
   const tabs = [
     { id: "tree", name: "Tree", emoji: "🌳" },
     { id: "theme", name: "Theme", emoji: "🌅" },
@@ -41,16 +46,14 @@ const CustomizeSanctuaryModal = () => {
   ];
 
   useEffect(() => {
-    if (!isModalOpen) {
-      setShowConfirmDialog(false);
-      return undefined;
-    }
+    if (!isModalOpen) return undefined;
 
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
         if (showConfirmDialog) {
           setShowConfirmDialog(false);
         } else {
+          setShowConfirmDialog(false);
           setIsModalOpen(false);
         }
       }
@@ -66,11 +69,6 @@ const CustomizeSanctuaryModal = () => {
   const handleRestoreDefaults = () => {
     updateSettings({ ...DEFAULT_SANCTUARY_SETTINGS });
     setShowConfirmDialog(false);
-  };
-
-  const handleClose = () => {
-    setShowConfirmDialog(false);
-    setIsModalOpen(false);
   };
 
   return (

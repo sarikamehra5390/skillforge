@@ -1,4 +1,5 @@
-import React, {
+import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -403,7 +404,7 @@ const Skills = () => {
   // Modal helpers
   // ---------------------------------------------------------
 
-  const closeAddModal = () => {
+  const closeAddModal = useCallback(() => {
     if (isSubmitting) return;
 
     setIsAddModalOpen(false);
@@ -412,9 +413,9 @@ const Skills = () => {
       name: "",
       category: "",
     });
-  };
+  }, [isSubmitting]);
 
-  const closeEditModal = () => {
+  const closeEditModal = useCallback(() => {
     if (isSubmitting) return;
 
     setIsEditModalOpen(false);
@@ -424,7 +425,7 @@ const Skills = () => {
       name: "",
       category: "",
     });
-  };
+  }, [isSubmitting]);
 
   // ---------------------------------------------------------
   // Escape key
@@ -468,6 +469,8 @@ const Skills = () => {
     isAddModalOpen,
     isEditModalOpen,
     isSubmitting,
+    closeAddModal,
+    closeEditModal,
   ]);
 
   return (

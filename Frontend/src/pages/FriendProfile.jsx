@@ -1,5 +1,4 @@
 import {
-  useCallback,
   useEffect,
   useState,
 } from "react";
@@ -57,7 +56,8 @@ const FriendProfile = () => {
     DEFAULT_REACTIONS
   );
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loadedFriendId, setLoadedFriendId] = useState(null);
+  const loading = Boolean(friendId) && loadedFriendId !== friendId;
   const [reactionLoading, setReactionLoading] =
     useState(null);
 
@@ -81,72 +81,44 @@ const FriendProfile = () => {
   // Fetch Friend Data
   // ---------------------------------------------------------
 
-  const fetchData = useCallback(async () => {
-    if (!friendId) {
-      setError(
-        "No friend profile was specified."
-      );
-      setLoading(false);
-      return;
-    }
-
-    setError(null);
-    setLoading(true);
-
-    try {
-      const [
-        userData,
-        sanctuaryData,
-        reactionsData,
-      ] = await Promise.all([
-        fetchPublicProfile(friendId),
-
-        fetchPublicSanctuary(friendId).catch(
-          () => null
-        ),
-
-        fetchReactions(friendId).catch(
-          () => DEFAULT_REACTIONS
-        ),
-      ]);
-
-      if (!userData) {
-        throw new Error(
-          "Friend profile was not found."
-        );
-      }
-
-      setFriend(userData);
-      setSanctuary(sanctuaryData);
-      setReactions(
-        normalizeReactions(reactionsData)
-      );
-    } catch (err) {
-      console.error(
-        "Failed to fetch friend data:",
-        err
-      );
-
-      setFriend(null);
-      setSanctuary(null);
-      setReactions(DEFAULT_REACTIONS);
-
-      setError(
-        "This sanctuary could not be reached. It may be private or the link is broken."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    friendId,
-    fetchPublicProfile,
-    fetchPublicSanctuary,
-    fetchReactions,
-  ]);
-
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!friendId) return undefined;
+
+    let active = true;
+    const loadFriend = async () => {
+      try {
+        const [userData, sanctuaryData, reactionsData] = await Promise.all([
+          fetchPublicProfile(friendId),
+          fetchPublicSanctuary(friendId).catch(() => null),
+          fetchReactions(friendId).catch(() => DEFAULT_REACTIONS),
+        ]);
+
+        if (!userData) throw new Error("Friend profile was not found.");
+        if (!active) return;
+
+        setError(null);
+        setFriend(userData);
+        setSanctuary(sanctuaryData);
+        setReactions(normalizeReactions(reactionsData));
+      } catch (err) {
+        if (!active) return;
+        console.error("Failed to fetch friend data:", err);
+        setFriend(null);
+        setSanctuary(null);
+        setReactions(DEFAULT_REACTIONS);
+        setError(
+          "This sanctuary could not be reached. It may be private or the link is broken."
+        );
+      } finally {
+        if (active) setLoadedFriendId(friendId);
+      }
+    };
+
+    loadFriend();
+    return () => {
+      active = false;
+    };
+  }, [friendId, fetchPublicProfile, fetchPublicSanctuary, fetchReactions]);
 
   // ---------------------------------------------------------
   // Send Reaction

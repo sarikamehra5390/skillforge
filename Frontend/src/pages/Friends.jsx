@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Users,
@@ -15,7 +15,6 @@ import useFriendsStore from "../store/useFriendsStore";
 import useAuthStore from "../store/useAuthStore";
 
 import GlassCard from "../components/common/GlassCard";
-import Badge from "../components/common/Badge";
 
 import { getTreeStage } from "../utils/gamification";
 import useDebounce from "../utils/useDebounce";

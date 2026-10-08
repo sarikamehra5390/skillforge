@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import useSanctuaryStore from "../store/useSanctuaryStore";
 import { COMPANION_OPTIONS } from "../utils/sanctuary";

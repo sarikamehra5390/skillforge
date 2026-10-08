@@ -1,6 +1,7 @@
-import React, {
+import {
+  useCallback,
   useEffect,
-  useRef,
+  useMemo,
   useState,
 } from "react";
 
@@ -18,7 +19,6 @@ import useAuthStore from "../store/useAuthStore";
 import useFriendsStore from "../store/useFriendsStore";
 import useAppStore from "../store/useAppStore";
 
-import StatCard from "../components/dashboard/StatCard";
 import RecentActivity from "../components/dashboard/RecentActivity";
 import GlassCard from "../components/common/GlassCard";
 import Button from "../components/common/Button";
@@ -74,8 +74,6 @@ const Dashboard = () => {
   const [checkedInToday, setCheckedInToday] =
     useState(false);
 
-  const wateringTimeoutRef = useRef(null);
-
   const navigate = useNavigate();
 
   const safeSkills = Array.isArray(skills)
@@ -126,8 +124,6 @@ const Dashboard = () => {
 
     if (user) {
       checkStatus();
-    } else {
-      setCheckedInToday(false);
     }
 
     return () => {
@@ -149,12 +145,10 @@ const Dashboard = () => {
   // ---------------------------------------------------------
 
   useEffect(() => {
-    return () => {
-      if (wateringTimeoutRef.current) {
-        clearTimeout(wateringTimeoutRef.current);
-      }
-    };
-  }, []);
+    if (!isWatering) return undefined;
+    const timeout = window.setTimeout(() => setIsWatering(false), 2000);
+    return () => window.clearTimeout(timeout);
+  }, [isWatering]);
 
   // ---------------------------------------------------------
   // XP Progress
@@ -241,26 +235,16 @@ const Dashboard = () => {
   // Watering Animation
   // ---------------------------------------------------------
 
-  const handleWaterTree = () => {
+  const handleWaterTree = useCallback(() => {
     setIsWatering(true);
-
-    if (wateringTimeoutRef.current) {
-      clearTimeout(wateringTimeoutRef.current);
-    }
-
-    wateringTimeoutRef.current = setTimeout(() => {
-      setIsWatering(false);
-      wateringTimeoutRef.current = null;
-    }, 2000);
-
     setShowCheckInModal(true);
-  };
+  }, [setShowCheckInModal]);
 
   // ---------------------------------------------------------
   // Daily Missions
   // ---------------------------------------------------------
 
-  const missions = [
+  const missions = useMemo(() => [
     {
       id: 1,
       title: "Log a Practice Session",
@@ -285,7 +269,7 @@ const Dashboard = () => {
       buttonLabel: "Water Tree",
       onClick: handleWaterTree,
     },
-  ];
+  ], [hasSessionToday, checkedInMoodToday, navigate, handleWaterTree]);
 
   // ---------------------------------------------------------
   // Loading State

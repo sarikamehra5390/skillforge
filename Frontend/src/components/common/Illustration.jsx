@@ -1,5 +1,69 @@
-import React, { useId, useMemo } from 'react';
+import { useId, useMemo } from 'react';
 import { cn } from '../../utils/cn';
+
+const randomData = (() => {
+  const stars = Array.from({ length: 40 }, (_, i) => ({
+    id: i,
+    cx: 50 + Math.random() * 1100,
+    cy: 30 + Math.random() * 250,
+    r: 0.5 + Math.random() * 1.5,
+    opacity: 0.3 + Math.random() * 0.7,
+    minOpacity: 0.3 + Math.random() * 0.5,
+    maxOpacity: 0.8 + Math.random() * 0.2,
+    duration: 2 + Math.random() * 3,
+  }));
+
+  const particles = Array.from({ length: 20 }, (_, i) => {
+    const startY = 100 + Math.random() * 400;
+    const middleY = 50 + Math.random() * 400;
+    const endY = 100 + Math.random() * 400;
+    const duration = 4 + Math.random() * 6;
+
+    return {
+      id: i,
+      cx: 100 + Math.random() * 1000,
+      cy: startY,
+      r: 1 + Math.random() * 2,
+      startY,
+      middleY,
+      endY,
+      duration,
+    };
+  });
+
+  const fireflies = Array.from({ length: 12 }, (_, i) => {
+    const startX = 150 + Math.random() * 900;
+    const middleX = 150 + Math.random() * 900;
+    const endX = 150 + Math.random() * 900;
+    const startY = 200 + Math.random() * 350;
+    const middleY = 200 + Math.random() * 350;
+    const endY = 200 + Math.random() * 350;
+
+    return {
+      id: i,
+      cx: startX,
+      cy: startY,
+      startX,
+      middleX,
+      endX,
+      startY,
+      middleY,
+      endY,
+      movementDuration: 5 + Math.random() * 10,
+      opacityDuration: 2 + Math.random() * 3,
+    };
+  });
+
+  const constellationStars = Array.from({ length: 25 }, (_, i) => ({
+    id: i,
+    cx: 30 + Math.random() * 440,
+    cy: 30 + Math.random() * 440,
+    r: 0.8 + Math.random() * 1.5,
+    opacity: 0.3 + Math.random() * 0.6,
+  }));
+
+  return { stars, particles, fireflies, constellationStars };
+})();
 
 const Illustration = ({ name, className }) => {
   const rawId = useId();
@@ -20,76 +84,6 @@ const Illustration = ({ name, className }) => {
     }),
     [idPrefix]
   );
-
-  const randomData = useMemo(() => {
-    const stars = Array.from({ length: 40 }, (_, i) => ({
-      id: i,
-      cx: 50 + Math.random() * 1100,
-      cy: 30 + Math.random() * 250,
-      r: 0.5 + Math.random() * 1.5,
-      opacity: 0.3 + Math.random() * 0.7,
-      minOpacity: 0.3 + Math.random() * 0.5,
-      maxOpacity: 0.8 + Math.random() * 0.2,
-      duration: 2 + Math.random() * 3,
-    }));
-
-    const particles = Array.from({ length: 20 }, (_, i) => {
-      const startY = 100 + Math.random() * 400;
-      const middleY = 50 + Math.random() * 400;
-      const endY = 100 + Math.random() * 400;
-      const duration = 4 + Math.random() * 6;
-
-      return {
-        id: i,
-        cx: 100 + Math.random() * 1000,
-        cy: startY,
-        r: 1 + Math.random() * 2,
-        startY,
-        middleY,
-        endY,
-        duration,
-      };
-    });
-
-    const fireflies = Array.from({ length: 12 }, (_, i) => {
-      const startX = 150 + Math.random() * 900;
-      const middleX = 150 + Math.random() * 900;
-      const endX = 150 + Math.random() * 900;
-
-      const startY = 200 + Math.random() * 350;
-      const middleY = 200 + Math.random() * 350;
-      const endY = 200 + Math.random() * 350;
-
-      return {
-        id: i,
-        cx: startX,
-        cy: startY,
-        startX,
-        middleX,
-        endX,
-        startY,
-        middleY,
-        endY,
-        movementDuration: 5 + Math.random() * 10,
-        opacityDuration: 2 + Math.random() * 3,
-      };
-    });
-
-    const constellationStars = Array.from({ length: 25 }, (_, i) => ({
-      id: i,
-      cx: 30 + Math.random() * 440,
-      cy: 30 + Math.random() * 440,
-      r: 0.8 + Math.random() * 1.5,
-      opacity: 0.3 + Math.random() * 0.6,
-    }));
-
-    return {
-      stars,
-      particles,
-      fireflies,
-      constellationStars,
-    };
-  }, []);
 
   const illustrations = useMemo(
     () => ({
@@ -1063,7 +1057,7 @@ const Illustration = ({ name, className }) => {
         </svg>
       ),
     }),
-    [className, ids, randomData]
+    [className, ids]
   );
 
   return illustrations[name] || null;

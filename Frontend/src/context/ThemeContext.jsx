@@ -1,16 +1,10 @@
-import React, {
-  createContext,
-  useContext,
+import {
   useEffect,
-  useState,
 } from "react";
 
 import useAuthStore from "../store/useAuthStore";
 import useSanctuaryStore from "../store/useSanctuaryStore";
-import {
-  loadSanctuaryFromStorage,
-} from "../utils/sanctuaryStorage";
-
+import ThemeContext from "./ThemeContextValue";
 // Define all theme configurations with CSS variables
 const THEMES = {
   classic: {
@@ -248,8 +242,6 @@ const THEMES = {
   },
 };
 
-const ThemeContext = createContext(null);
-
 export const ThemeProvider = ({
   children,
 }) => {
@@ -265,31 +257,20 @@ export const ThemeProvider = ({
     (state) => state.updateSettings
   );
 
-  const [currentTheme, setCurrentTheme] =
-    useState("classic");
+  const themeId =
+    settings?.theme ||
+    user?.sanctuarySettings?.theme ||
+    "classic";
+  const currentTheme = THEMES[themeId]
+    ? themeId
+    : "classic";
 
   useEffect(() => {
     if (typeof document === "undefined") {
       return;
     }
 
-    const storedTheme =
-      loadSanctuaryFromStorage()?.theme;
-
-    const themeId =
-      settings?.theme ||
-      user?.sanctuarySettings?.theme ||
-      storedTheme ||
-      "classic";
-
-    const validThemeId = THEMES[themeId]
-      ? themeId
-      : "classic";
-
-    setCurrentTheme(validThemeId);
-
-    const theme =
-      THEMES[validThemeId];
+    const theme = THEMES[currentTheme];
 
     Object.entries(theme.css).forEach(
       ([key, value]) => {
@@ -300,28 +281,12 @@ export const ThemeProvider = ({
       }
     );
   }, [
-    settings?.theme,
-    user?.sanctuarySettings?.theme,
+    currentTheme,
   ]);
 
   const changeTheme = (themeId) => {
     if (!THEMES[themeId]) {
       return;
-    }
-
-    setCurrentTheme(themeId);
-
-    if (typeof document !== "undefined") {
-      const theme = THEMES[themeId];
-
-      Object.entries(theme.css).forEach(
-        ([key, value]) => {
-          document.documentElement.style.setProperty(
-            key,
-            value
-          );
-        }
-      );
     }
 
     updateSettings({
@@ -341,19 +306,3 @@ export const ThemeProvider = ({
     </ThemeContext.Provider>
   );
 };
-
-export const useTheme = () => {
-  const context = useContext(
-    ThemeContext
-  );
-
-  if (!context) {
-    throw new Error(
-      "useTheme must be used within a ThemeProvider"
-    );
-  }
-
-  return context;
-};
-
-export default ThemeContext;

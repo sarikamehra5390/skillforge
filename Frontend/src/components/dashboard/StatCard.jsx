@@ -1,4 +1,3 @@
-import React from 'react';
 import GlassCard from '../common/GlassCard';
 import Badge from '../common/Badge';
 import { cn } from '../../utils/cn';

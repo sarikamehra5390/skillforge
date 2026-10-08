@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlassCard from './common/GlassCard';
 import useAppStore from '../store/useAppStore';
@@ -33,12 +33,6 @@ const moodOptions = [
 const CheckInModal = ({ isOpen, onClose }) => {
   const { saveMood } = useAppStore();
   const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setIsSaving(false);
-    }
-  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) {

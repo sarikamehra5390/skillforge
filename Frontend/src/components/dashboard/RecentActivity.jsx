@@ -1,4 +1,3 @@
-import React from 'react';
 import GlassCard from '../common/GlassCard';
 import { formatDistanceToNow } from 'date-fns';
 import { History, Clock, Zap } from 'lucide-react';

@@ -1,4 +1,3 @@
-import React, { useMemo } from "react";
 import useSanctuaryStore from "../store/useSanctuaryStore";
 
 const createParticles = (count, generator) =>
@@ -7,60 +6,42 @@ const createParticles = (count, generator) =>
     ...generator(),
   }));
 
+const rainParticles = createParticles(80, () => ({
+  left: `${Math.random() * 100}%`,
+  animationDelay: `${Math.random()}s`,
+}));
+
+const snowParticles = createParticles(40, () => {
+  const size = 5 + Math.random() * 10;
+  return {
+    size,
+    left: `${Math.random() * 100}%`,
+    animationDelay: `${Math.random() * 5}s`,
+  };
+});
+
+const leafParticles = createParticles(20, () => ({
+  left: `${Math.random() * 100}%`,
+  animationDelay: `${Math.random() * 10}s`,
+}));
+
+const starParticles = createParticles(60, () => {
+  const size = 2 + Math.random() * 3;
+  return {
+    size,
+    top: `${Math.random() * 100}%`,
+    left: `${Math.random() * 100}%`,
+    duration: `${2 + Math.random() * 3}s`,
+    animationDelay: `${Math.random() * 3}s`,
+  };
+});
+
 const Ambience = () => {
   const { settings } = useSanctuaryStore();
 
   const activeAmbience = Array.isArray(settings?.music)
     ? settings.music
     : [];
-
-  const rainParticles = useMemo(
-    () =>
-      createParticles(80, () => ({
-        left: `${Math.random() * 100}%`,
-        animationDelay: `${Math.random()}s`,
-      })),
-    []
-  );
-
-  const snowParticles = useMemo(
-    () =>
-      createParticles(40, () => {
-        const size = 5 + Math.random() * 10;
-
-        return {
-          size,
-          left: `${Math.random() * 100}%`,
-          animationDelay: `${Math.random() * 5}s`,
-        };
-      }),
-    []
-  );
-
-  const leafParticles = useMemo(
-    () =>
-      createParticles(20, () => ({
-        left: `${Math.random() * 100}%`,
-        animationDelay: `${Math.random() * 10}s`,
-      })),
-    []
-  );
-
-  const starParticles = useMemo(
-    () =>
-      createParticles(60, () => {
-        const size = 2 + Math.random() * 3;
-
-        return {
-          size,
-          top: `${Math.random() * 100}%`,
-          left: `${Math.random() * 100}%`,
-          duration: `${2 + Math.random() * 3}s`,
-          animationDelay: `${Math.random() * 3}s`,
-        };
-      }),
-    []
-  );
 
   return (
     <>

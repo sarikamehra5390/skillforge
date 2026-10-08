@@ -3,6 +3,10 @@ const mongoose = require("mongoose");
 const Skill = require("../models/Skill");
 const Session = require("../models/Session");
 const auth = require("../middleware/auth");
+const {
+  calculateLevel,
+  calculateCurrentStreak,
+} = require("../utils/gamification");
 const router = express.Router();
 
 const { isValidObjectId } = mongoose.Types;
@@ -80,9 +84,36 @@ router.delete("/:id", auth, async (req, res) => {
     if (!isValidObjectId(req.params.id)) {
       return res.status(400).json({ message: "Invalid ID format" });
     }
-    const skill = await Skill.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
+    const skill = await Skill.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user._id,
+    });
     if (!skill) return res.status(404).json({ message: "Skill not found" });
-    await Session.deleteMany({ skillId: skill._id, userId: req.user._id });
+
+    const deletedSessions = await Session.find({
+      skillId: skill._id,
+      userId: req.user._id,
+    });
+    const removedXP = deletedSessions.reduce(
+      (total, session) =>
+        total + (Number(session.xpGained) || Number(session.duration) || 0),
+      0
+    );
+
+    await Session.deleteMany({
+      skillId: skill._id,
+      userId: req.user._id,
+    });
+
+    const user = req.user;
+    user.xp = Math.max(0, (user.xp || 0) - removedXP);
+    user.level = calculateLevel(user.xp);
+    const remainingSessions = await Session.find({
+      userId: user._id,
+    });
+    user.streak = calculateCurrentStreak(remainingSessions);
+    await user.save();
+
     res.json({ message: "Skill deleted" });
   } catch (error) {
     console.error("DELETE SKILL ERROR:", error);

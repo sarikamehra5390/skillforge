@@ -1,5 +1,4 @@
-import React, {
-  useCallback,
+import {
   useEffect,
   useState,
 } from "react";
@@ -91,7 +90,7 @@ const Achievements = () => {
   );
 
   const [loading, setLoading] =
-    useState(true);
+    useState(() => Boolean(userId));
 
   const [data, setData] =
     useState(null);
@@ -99,42 +98,46 @@ const Achievements = () => {
   const [error, setError] =
     useState(false);
 
-  const fetchData = useCallback(
-    async () => {
-      try {
-        setLoading(true);
-        setError(false);
-
-        const response =
-          await api.get("/achievements");
-
-        setData(response.data);
-      } catch (err) {
-        console.error(
-          "Failed to load achievements:",
-          err
-        );
-
-        setError(true);
-
-        toast.error(
-          "Failed to load your milestone archive"
-        );
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
-
   useEffect(() => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
+    if (!userId) return undefined;
 
-    fetchData();
-  }, [userId, fetchData]);
+    let active = true;
+    const loadAchievements = async () => {
+      try {
+        const response = await api.get("/achievements");
+        if (active) {
+          setError(false);
+          setData(response.data);
+        }
+      } catch (err) {
+        if (active) {
+          console.error("Failed to load achievements:", err);
+          setError(true);
+          toast.error("Failed to load your milestone archive");
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    loadAchievements();
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setError(false);
+    api.get("/achievements")
+      .then((response) => setData(response.data))
+      .catch((err) => {
+        console.error("Failed to load achievements:", err);
+        setError(true);
+        toast.error("Failed to load your milestone archive");
+      })
+      .finally(() => setLoading(false));
+  };
 
   if (loading) {
     return (
@@ -171,7 +174,7 @@ const Achievements = () => {
 
         <button
           type="button"
-          onClick={fetchData}
+          onClick={handleRetry}
           className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
         >
           <RefreshCw

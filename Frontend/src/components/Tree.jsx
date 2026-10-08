@@ -1,6 +1,5 @@
-import React from "react";
 import { motion } from "framer-motion";
-import { useTree } from "../context/TreeContext";
+import { useTree } from "../context/useTree";
 
 const Tree = ({
   size = "large",

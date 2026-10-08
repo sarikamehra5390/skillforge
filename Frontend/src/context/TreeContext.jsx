@@ -1,21 +1,13 @@
-import React, {
-  createContext,
-  useContext,
+import {
   useEffect,
   useMemo,
-  useState,
 } from "react";
 import { toast } from "sonner";
 
 import { TREE_OPTIONS } from "../utils/sanctuary";
-import {
-  loadSanctuaryFromStorage,
-} from "../utils/sanctuaryStorage";
-
 import useSanctuaryStore from "../store/useSanctuaryStore";
 import useAuthStore from "../store/useAuthStore";
-
-const TreeContext = createContext(null);
+import TreeContext from "./TreeContextValue";
 
 const UNLOCKED_TREES_STORAGE_KEY =
   "skillForgeUnlockedTrees";
@@ -34,9 +26,6 @@ export const TreeProvider = ({
   const updateSettings = useSanctuaryStore(
     (state) => state.updateSettings
   );
-
-  const [selectedTree, setSelectedTreeState] =
-    useState("sprout");
 
   const userLevel =
     Number(user?.level) || 1;
@@ -121,37 +110,12 @@ export const TreeProvider = ({
     }
   }, [user, unlockedTrees]);
 
-  // Restore selected tree from settings/storage
-  useEffect(() => {
-    const storedTree =
-      typeof window !== "undefined"
-        ? loadSanctuaryFromStorage()?.treeType
-        : null;
-
-    const treeType =
-      settings?.treeType ||
-      user?.sanctuarySettings?.treeType ||
-      storedTree;
-
-    if (
-      treeType &&
-      unlockedTrees.includes(treeType)
-    ) {
-      setSelectedTreeState(treeType);
-      return;
-    }
-
-    // Fallback to the first unlocked tree
-    if (unlockedTrees.length > 0) {
-      setSelectedTreeState(
-        unlockedTrees[0]
-      );
-    }
-  }, [
-    settings?.treeType,
-    user?.sanctuarySettings?.treeType,
-    unlockedTrees,
-  ]);
+  const configuredTree =
+    settings?.treeType ||
+    user?.sanctuarySettings?.treeType;
+  const selectedTree = unlockedTrees.includes(configuredTree)
+    ? configuredTree
+    : unlockedTrees[0] || "sprout";
 
   const selectTree = (treeId) => {
     if (
@@ -159,8 +123,6 @@ export const TreeProvider = ({
     ) {
       return;
     }
-
-    setSelectedTreeState(treeId);
 
     updateSettings({
       treeType: treeId,
@@ -181,18 +143,3 @@ export const TreeProvider = ({
     </TreeContext.Provider>
   );
 };
-
-export const useTree = () => {
-  const context =
-    useContext(TreeContext);
-
-  if (!context) {
-    throw new Error(
-      "useTree must be used within a TreeProvider"
-    );
-  }
-
-  return context;
-};
-
-export default TreeContext;
