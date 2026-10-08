@@ -2,37 +2,54 @@ const express = require("express");
 const Activity = require("../models/Activity");
 const Friend = require("../models/Friend");
 const auth = require("../middleware/auth");
+
 const router = express.Router();
 
 // Get friend activity feed
 router.get("/feed", auth, async (req, res) => {
   try {
-    // Get all accepted friends
+    const currentUserId = req.user._id;
+
+    // Get all accepted friendships involving the current user
     const friends = await Friend.find({
       $or: [
-        { userId: req.user._id, status: "accepted" },
-        { friendId: req.user._id, status: "accepted" },
+        {
+          userId: currentUserId,
+          status: "accepted",
+        },
+        {
+          friendId: currentUserId,
+          status: "accepted",
+        },
       ],
-    });
+    }).lean();
 
-    const friendIds = friends.map((f) =>
-      f.userId.toString() === req.user._id.toString() ? f.friendId : f.userId
+    // Get the other user's ID from each friendship
+    const friendIds = friends.map((friend) =>
+      friend.userId.toString() === currentUserId.toString()
+        ? friend.friendId
+        : friend.userId
     );
 
-    // Include current user's activities too
-    const userIds = [...friendIds, req.user._id];
+    // Include the current user's own activities
+    const userIds = [currentUserId, ...friendIds];
 
     const activities = await Activity.find({
       userId: { $in: userIds },
     })
-      .populate("userId")
+      .populate("userId", "username displayName avatar")
       .sort({ createdAt: -1 })
-      .limit(50);
+      .limit(50)
+      .lean();
 
-    res.json(activities);
+    return res.json(activities);
   } catch (error) {
     console.error("Get activity feed error:", error);
-    res.status(500).json({ message: error.message });
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch activity feed",
+    });
   }
 });
 

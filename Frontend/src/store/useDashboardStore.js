@@ -2,6 +2,22 @@ import { create } from 'zustand';
 import api from '../api/axios';
 import useAuthStore from './useAuthStore';
 
+const normalizeArray = (value) =>
+  Array.isArray(value) ? value : [];
+
+const getErrorMessage = (error, fallbackMessage) =>
+  error?.response?.data?.message ||
+  error?.message ||
+  fallbackMessage;
+
+const getNumericValue = (value, fallback = 0) => {
+  const number = Number(value);
+
+  return Number.isFinite(number)
+    ? number
+    : fallback;
+};
+
 const useDashboardStore = create((set, get) => ({
   stats: {
     totalSkills: 0,
@@ -9,164 +25,457 @@ const useDashboardStore = create((set, get) => ({
     totalDuration: 0,
     streak: 0,
     level: 1,
-    xp: 0
+    xp: 0,
   },
+
   recentActivity: [],
   skills: [],
   sessions: [],
+
   loading: false,
   error: null,
+
   _fetchPromise: null,
 
+  // =========================
+  // Fetch Dashboard Data
+  // =========================
+
   fetchDashboardData: async () => {
-    if (get()._fetchPromise) {
-      return get()._fetchPromise;
+    const existingPromise = get()._fetchPromise;
+
+    if (existingPromise) {
+      return existingPromise;
     }
+
     const authState = useAuthStore.getState();
+
     if (!authState.user) {
-      return;
+      set({
+        loading: false,
+      });
+
+      return null;
     }
-    set({ loading: true, error: null });
+
+    set({
+      loading: true,
+      error: null,
+    });
+
     const promise = (async () => {
       try {
-        const [skillsRes, sessionsRes] = await Promise.all([
-          api.get('/skills'),
-          api.get('/sessions'),
-        ]);
+        const [skillsRes, sessionsRes] =
+          await Promise.all([
+            api.get('/skills'),
+            api.get('/sessions'),
+          ]);
 
-        const authUser = authState.user;
+        const skills = normalizeArray(skillsRes.data);
+        const sessions = normalizeArray(sessionsRes.data);
 
-        const totalDuration = sessionsRes.data.reduce((acc, session) => acc + (typeof session.duration === 'number' ? session.duration : 0), 0);
+        const totalDuration = sessions.reduce(
+          (total, session) => {
+            const duration = Number(session?.duration);
+
+            return (
+              total +
+              (Number.isFinite(duration)
+                ? duration
+                : 0)
+            );
+          },
+          0
+        );
+
+        // Always read the latest auth state after
+        // the async requests have completed.
+        const currentUser =
+          useAuthStore.getState().user;
+
+        const dashboardData = {
+          stats: {
+            totalSkills: skills.length,
+            totalSessions: sessions.length,
+            totalDuration,
+
+            streak: getNumericValue(
+              currentUser?.streak,
+              0
+            ),
+
+            level: getNumericValue(
+              currentUser?.level,
+              1
+            ),
+
+            xp: getNumericValue(
+              currentUser?.xp,
+              0
+            ),
+          },
+
+          recentActivity: sessions.slice(0, 5),
+          skills,
+          sessions,
+        };
 
         set({
-          stats: {
-            totalSkills: skillsRes.data.length,
-            totalSessions: sessionsRes.data.length,
-            totalDuration,
-            streak: authUser?.streak ?? 0,
-            level: authUser?.level ?? 1,
-            xp: authUser?.xp ?? 0
-          },
-          recentActivity: sessionsRes.data.slice(0, 5),
-          skills: skillsRes.data,
-          sessions: sessionsRes.data,
+          ...dashboardData,
           loading: false,
+          error: null,
+        });
+
+        return dashboardData;
+      } catch (error) {
+        const message = getErrorMessage(
+          error,
+          'Failed to fetch dashboard data'
+        );
+
+        set({
+          error: message,
+          loading: false,
+        });
+
+        throw error;
+      } finally {
+        set({
           _fetchPromise: null,
         });
-      } catch (error) {
-        set({ error: error.message || 'Failed to fetch dashboard data', loading: false, _fetchPromise: null });
       }
     })();
-    set({ _fetchPromise: promise });
+
+    set({
+      _fetchPromise: promise,
+    });
+
     return promise;
   },
 
+  // =========================
+  // Create Session
+  // =========================
+
   createSession: async (sessionData) => {
+    set({
+      error: null,
+    });
+
     try {
-      const response = await api.post('/sessions', sessionData);
-      const authState = useAuthStore.getState();
-      const { xp, level, streak, totalXp, xpDelta, levelDelta, streakDelta, newLevel, newStreak, xpGained, session } = response.data || {};
+      const response = await api.post(
+        '/sessions',
+        sessionData
+      );
+
+      const data = response.data || {};
+
+      /*
+       * Prefer server-provided user totals.
+       * Do not calculate XP locally when the backend
+       * already provides the authoritative value.
+       */
+      const currentUser =
+        useAuthStore.getState().user;
+
       const authUpdates = {};
-      const currentUser = authState.user;
-      if (xp !== undefined) authUpdates.xp = xp;
-      if (level !== undefined) authUpdates.level = level;
-      if (streak !== undefined) authUpdates.streak = streak;
-      if (totalXp !== undefined) authUpdates.xp = totalXp;
-      if (newLevel !== undefined) authUpdates.level = newLevel;
-      if (newStreak !== undefined) authUpdates.streak = newStreak;
-      if (currentUser) {
-        const directXpGain = session?.xpGained || xpGained;
-        if (directXpGain !== undefined) authUpdates.xp = (currentUser.xp || 0) + directXpGain;
-        if (xpDelta !== undefined) authUpdates.xp = (currentUser.xp || 0) + xpDelta;
-        if (levelDelta !== undefined) authUpdates.level = (currentUser.level || 1) + levelDelta;
-        if (streakDelta !== undefined) authUpdates.streak = (currentUser.streak || 0) + streakDelta;
+
+      if (data.xp !== undefined) {
+        authUpdates.xp = getNumericValue(
+          data.xp,
+          currentUser?.xp ?? 0
+        );
+      } else if (data.totalXp !== undefined) {
+        authUpdates.xp = getNumericValue(
+          data.totalXp,
+          currentUser?.xp ?? 0
+        );
       }
-      if (Object.keys(authUpdates).length > 0) {
-        authState.updateUser(authUpdates);
+
+      if (data.level !== undefined) {
+        authUpdates.level = getNumericValue(
+          data.level,
+          currentUser?.level ?? 1
+        );
+      } else if (data.newLevel !== undefined) {
+        authUpdates.level = getNumericValue(
+          data.newLevel,
+          currentUser?.level ?? 1
+        );
       }
+
+      if (data.streak !== undefined) {
+        authUpdates.streak = getNumericValue(
+          data.streak,
+          currentUser?.streak ?? 0
+        );
+      } else if (data.newStreak !== undefined) {
+        authUpdates.streak = getNumericValue(
+          data.newStreak,
+          currentUser?.streak ?? 0
+        );
+      }
+
+      if (
+        currentUser &&
+        Object.keys(authUpdates).length > 0
+      ) {
+        useAuthStore
+          .getState()
+          .updateUser(authUpdates);
+      }
+
       await get().fetchDashboardData();
-      return response.data;
+
+      return data;
     } catch (error) {
-      set({ error: error.message || 'Failed to create session' });
+      const message = getErrorMessage(
+        error,
+        'Failed to create session'
+      );
+
+      set({
+        error: message,
+      });
+
       throw error;
     }
   },
+
+  // =========================
+  // Update Session
+  // =========================
 
   updateSession: async (id, sessionData) => {
+    if (!id) {
+      throw new Error('Session ID is required.');
+    }
+
+    set({
+      error: null,
+    });
+
     try {
-      const res = await api.put(`/sessions/${id}`, sessionData);
-      const { xpDelta, levelDelta, xp, level } = res.data || {};
-      const currentUser = useAuthStore.getState().user;
+      const response = await api.put(
+        `/sessions/${id}`,
+        sessionData
+      );
+
+      const data = response.data || {};
+
+      const currentUser =
+        useAuthStore.getState().user;
+
       const authUpdates = {};
-      if (xp !== undefined) authUpdates.xp = xp;
-      if (level !== undefined) authUpdates.level = level;
-      if (currentUser && (xpDelta !== undefined || levelDelta !== undefined)) {
-        if (xpDelta !== undefined) authUpdates.xp = (currentUser.xp || 0) + xpDelta;
-        if (levelDelta !== undefined) authUpdates.level = (currentUser.level || 1) + levelDelta;
+
+      if (data.xp !== undefined) {
+        authUpdates.xp = getNumericValue(
+          data.xp,
+          currentUser?.xp ?? 0
+        );
       }
-      if (Object.keys(authUpdates).length > 0) {
-        useAuthStore.getState().updateUser(authUpdates);
+
+      if (data.level !== undefined) {
+        authUpdates.level = getNumericValue(
+          data.level,
+          currentUser?.level ?? 1
+        );
       }
+
+      if (
+        currentUser &&
+        Object.keys(authUpdates).length > 0
+      ) {
+        useAuthStore
+          .getState()
+          .updateUser(authUpdates);
+      }
+
       await get().fetchDashboardData();
-      return res.data;
+
+      return data;
     } catch (error) {
-      set({ error: error.message || 'Failed to update session' });
+      const message = getErrorMessage(
+        error,
+        'Failed to update session'
+      );
+
+      set({
+        error: message,
+      });
+
       throw error;
     }
   },
+
+  // =========================
+  // Delete Session
+  // =========================
 
   deleteSession: async (id) => {
+    if (!id) {
+      throw new Error('Session ID is required.');
+    }
+
+    set({
+      error: null,
+    });
+
     try {
-      const res = await api.delete(`/sessions/${id}`);
-      const { xpDeducted, oldXp, xp, level } = res.data || {};
-      const currentUser = useAuthStore.getState().user;
+      const response = await api.delete(
+        `/sessions/${id}`
+      );
+
+      const data = response.data || {};
+
+      const currentUser =
+        useAuthStore.getState().user;
+
       const authUpdates = {};
-      if (xp !== undefined) authUpdates.xp = xp;
-      if (level !== undefined) authUpdates.level = level;
-      if (currentUser && (xpDeducted !== undefined || oldXp !== undefined)) {
-        const deduct = xpDeducted !== undefined ? xpDeducted : (oldXp !== undefined ? (currentUser.xp || 0) - oldXp : 0);
-        authUpdates.xp = Math.max(0, (currentUser.xp || 0) - deduct);
+
+      /*
+       * Prefer the authoritative values returned
+       * by the backend.
+       */
+      if (data.xp !== undefined) {
+        authUpdates.xp = getNumericValue(
+          data.xp,
+          currentUser?.xp ?? 0
+        );
       }
-      if (Object.keys(authUpdates).length > 0) {
-        useAuthStore.getState().updateUser(authUpdates);
+
+      if (data.level !== undefined) {
+        authUpdates.level = getNumericValue(
+          data.level,
+          currentUser?.level ?? 1
+        );
       }
+
+      if (
+        currentUser &&
+        Object.keys(authUpdates).length > 0
+      ) {
+        useAuthStore
+          .getState()
+          .updateUser(authUpdates);
+      }
+
       await get().fetchDashboardData();
-      return true;
+
+      return data;
     } catch (error) {
-      set({ error: error.message || 'Failed to delete session' });
+      const message = getErrorMessage(
+        error,
+        'Failed to delete session'
+      );
+
+      set({
+        error: message,
+      });
+
       throw error;
     }
   },
+
+  // =========================
+  // Create Skill
+  // =========================
 
   createSkill: async (skillData) => {
+    set({
+      error: null,
+    });
+
     try {
-      const res = await api.post('/skills', skillData);
+      const response = await api.post(
+        '/skills',
+        skillData
+      );
+
       await get().fetchDashboardData();
-      return res.data;
+
+      return response.data;
     } catch (error) {
-      set({ error: error.message || 'Failed to create skill' });
+      const message = getErrorMessage(
+        error,
+        'Failed to create skill'
+      );
+
+      set({
+        error: message,
+      });
+
       throw error;
     }
   },
+
+  // =========================
+  // Update Skill
+  // =========================
 
   updateSkill: async (id, skillData) => {
+    if (!id) {
+      throw new Error('Skill ID is required.');
+    }
+
+    set({
+      error: null,
+    });
+
     try {
-      const res = await api.put(`/skills/${id}`, skillData);
+      const response = await api.put(
+        `/skills/${id}`,
+        skillData
+      );
+
       await get().fetchDashboardData();
-      return res.data;
+
+      return response.data;
     } catch (error) {
-      set({ error: error.message || 'Failed to update skill' });
+      const message = getErrorMessage(
+        error,
+        'Failed to update skill'
+      );
+
+      set({
+        error: message,
+      });
+
       throw error;
     }
   },
 
+  // =========================
+  // Delete Skill
+  // =========================
+
   deleteSkill: async (id) => {
+    if (!id) {
+      throw new Error('Skill ID is required.');
+    }
+
+    set({
+      error: null,
+    });
+
     try {
-      const res = await api.delete(`/skills/${id}`);
+      const response = await api.delete(
+        `/skills/${id}`
+      );
+
       await get().fetchDashboardData();
-      return res.data;
+
+      return response.data;
     } catch (error) {
-      set({ error: error.message || 'Failed to delete skill' });
+      const message = getErrorMessage(
+        error,
+        'Failed to delete skill'
+      );
+
+      set({
+        error: message,
+      });
+
       throw error;
     }
   },

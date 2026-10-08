@@ -3,22 +3,31 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
 
 const ProtectedRoute = () => {
-  const { isAuthenticated, checkAuth, loading, user } = useAuthStore();
+  const {
+    isAuthenticated,
+    checkAuth,
+    loading,
+    user,
+  } = useAuthStore();
+
   const location = useLocation();
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-
     if (token && !user && !loading) {
       checkAuth();
     }
-  }, [user, loading, checkAuth]);
+  }, [token, user, loading, checkAuth]);
 
   // Still checking authentication
-  if (loading || (localStorage.getItem('token') && !user)) {
+  if (loading || (token && !user)) {
     return (
-      <div className="min-h-screen bg-[#0a0a0c] flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0c]">
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"
+          aria-label="Checking authentication"
+          role="status"
+        />
       </div>
     );
   }

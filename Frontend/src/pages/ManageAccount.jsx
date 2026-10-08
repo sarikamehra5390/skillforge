@@ -1,121 +1,323 @@
-import React, { useState } from "react";
-import { User, Mail, Lock, ArrowLeft } from "lucide-react";
+import React, { useEffect, useState } from "react";
+
+import {
+  User,
+  Mail,
+  Lock,
+  ArrowLeft,
+} from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
+
 import useAuthStore from "../store/useAuthStore";
+
 import GlassCard from "../components/common/GlassCard";
 import Input from "../components/common/Input";
 import Button from "../components/common/Button";
-import { toast } from 'sonner';
+
+import { toast } from "sonner";
 
 const ManageAccount = () => {
-  const { user, updateProfile, loading } = useAuthStore();
   const navigate = useNavigate();
+
+  const user = useAuthStore(
+    (state) => state.user
+  );
+
+  const updateProfile = useAuthStore(
+    (state) => state.updateProfile
+  );
+
+  const loading = useAuthStore(
+    (state) => state.loading
+  );
+
   const [formData, setFormData] = useState({
-    username: user?.username || "",
-    email: user?.email || "",
-    displayName: user?.displayName || "",
+    username: "",
+    email: "",
+    displayName: "",
     newPassword: "",
     confirmPassword: "",
   });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
-      toast.error("Passwords don't match!");
+  // ---------------------------------------------------------
+  // Sync form with authenticated user
+  // ---------------------------------------------------------
+
+  useEffect(() => {
+    if (!user) return;
+
+    setFormData({
+      username: user.username || "",
+      email: user.email || "",
+      displayName: user.displayName || "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+  }, [user]);
+
+  // ---------------------------------------------------------
+  // Input Handler
+  // ---------------------------------------------------------
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  // ---------------------------------------------------------
+  // Submit
+  // ---------------------------------------------------------
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const username = formData.username.trim();
+    const email = formData.email.trim();
+    const displayName =
+      formData.displayName.trim();
+    const newPassword =
+      formData.newPassword;
+    const confirmPassword =
+      formData.confirmPassword;
+
+    // Username validation
+    if (!username) {
+      toast.error("Username is required.");
       return;
     }
 
-    const updateData = {
-      username: formData.username,
-      email: formData.email,
-      displayName: formData.displayName,
-    };
-    if (formData.newPassword) updateData.password = formData.newPassword;
+    // Email validation
+    const emailRegex =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    await updateProfile(updateData);
+    if (!emailRegex.test(email)) {
+      toast.error(
+        "Please enter a valid email address."
+      );
+      return;
+    }
+
+    // Password validation
+    if (newPassword) {
+      if (newPassword.length < 6) {
+        toast.error(
+          "New password must be at least 6 characters."
+        );
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        toast.error(
+          "Passwords don't match!"
+        );
+        return;
+      }
+    }
+
+    const updateData = {
+      username,
+      email,
+      displayName,
+    };
+
+    if (newPassword) {
+      updateData.password = newPassword;
+    }
+
+    try {
+      const result =
+        await updateProfile(updateData);
+
+      /*
+       * If updateProfile returns false, treat it
+       * as a failed update.
+       *
+       * If your store returns undefined after a
+       * successful update, we still consider the
+       * operation successful as long as it didn't throw.
+       */
+      if (result === false) {
+        toast.error(
+          "Unable to update your account."
+        );
+        return;
+      }
+
+      toast.success(
+        "Account updated successfully."
+      );
+
+      // Clear password fields after successful update
+      setFormData((prev) => ({
+        ...prev,
+        newPassword: "",
+        confirmPassword: "",
+      }));
+    } catch (error) {
+      console.error(
+        "Account update failed:",
+        error
+      );
+
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to update your account."
+      );
+    }
   };
 
   return (
     <div className="space-y-8 pb-24">
+      {/* Back */}
       <button
+        type="button"
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
       >
-        <ArrowLeft size={20} />
+        <ArrowLeft
+          size={20}
+          aria-hidden="true"
+        />
+
         Back
       </button>
 
-      <h1 className="text-3xl font-bold text-white italic">Manage Account</h1>
+      <h1 className="text-3xl font-bold text-white italic">
+        Manage Account
+      </h1>
 
       <GlassCard className="p-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6"
+          noValidate
+        >
+          {/* Username */}
           <div>
-            <label className="text-sm font-medium text-slate-300 mb-2 block">
+            <label
+              htmlFor="username"
+              className="text-sm font-medium text-slate-300 mb-2 block"
+            >
               Username
             </label>
+
             <Input
+              id="username"
               icon={User}
               value={formData.username}
-              onChange={(e) =>
-                setFormData({ ...formData, username: e.target.value })
+              onChange={(event) =>
+                handleChange(
+                  "username",
+                  event.target.value
+                )
               }
               placeholder="Enter username"
+              autoComplete="username"
             />
           </div>
+
+          {/* Display Name */}
           <div>
-            <label className="text-sm font-medium text-slate-300 mb-2 block">
+            <label
+              htmlFor="displayName"
+              className="text-sm font-medium text-slate-300 mb-2 block"
+            >
               Display Name
             </label>
+
             <Input
+              id="displayName"
               icon={User}
               value={formData.displayName}
-              onChange={(e) =>
-                setFormData({ ...formData, displayName: e.target.value })
+              onChange={(event) =>
+                handleChange(
+                  "displayName",
+                  event.target.value
+                )
               }
               placeholder="Enter display name"
+              autoComplete="name"
             />
           </div>
+
+          {/* Email */}
           <div>
-            <label className="text-sm font-medium text-slate-300 mb-2 block">
+            <label
+              htmlFor="email"
+              className="text-sm font-medium text-slate-300 mb-2 block"
+            >
               Email
             </label>
+
             <Input
+              id="email"
               icon={Mail}
               value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
+              onChange={(event) =>
+                handleChange(
+                  "email",
+                  event.target.value
+                )
               }
               placeholder="Enter email"
               type="email"
+              autoComplete="email"
             />
           </div>
+
+          {/* Password */}
           <div className="border-t border-white/10 pt-6">
             <h3 className="text-lg font-bold text-white italic mb-4">
               Change Password
             </h3>
+
             <div className="space-y-4">
               <Input
+                id="newPassword"
                 icon={Lock}
                 value={formData.newPassword}
-                onChange={(e) =>
-                  setFormData({ ...formData, newPassword: e.target.value })
+                onChange={(event) =>
+                  handleChange(
+                    "newPassword",
+                    event.target.value
+                  )
                 }
                 placeholder="New password"
                 type="password"
+                autoComplete="new-password"
               />
+
               <Input
+                id="confirmPassword"
                 icon={Lock}
                 value={formData.confirmPassword}
-                onChange={(e) =>
-                  setFormData({ ...formData, confirmPassword: e.target.value })
+                onChange={(event) =>
+                  handleChange(
+                    "confirmPassword",
+                    event.target.value
+                  )
                 }
                 placeholder="Confirm password"
                 type="password"
+                autoComplete="new-password"
               />
             </div>
           </div>
-          <Button type="submit" loading={loading} className="w-full">
-            Save Changes
+
+          {/* Submit */}
+          <Button
+            type="submit"
+            loading={loading}
+            disabled={loading}
+            className="w-full"
+          >
+            {loading
+              ? "Saving Changes..."
+              : "Save Changes"}
           </Button>
         </form>
       </GlassCard>

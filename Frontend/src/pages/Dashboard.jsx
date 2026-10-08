@@ -1,105 +1,308 @@
-import React, { useEffect, useState } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import {
   Plus,
-  Trophy,
   Target,
-  Flame,
   Zap,
-  Clock,
   BookOpen,
-  ArrowRight,
-  TrendingUp,
   Sparkles,
-  AlertCircle
-} from 'lucide-react';
-import useDashboardStore from '../store/useDashboardStore';
-import useAuthStore from '../store/useAuthStore';
-import useFriendsStore from '../store/useFriendsStore';
-import StatCard from '../components/dashboard/StatCard';
-import RecentActivity from '../components/dashboard/RecentActivity';
-import GlassCard from '../components/common/GlassCard';
-import Button from '../components/common/Button';
-import LoadingSkeleton from '../components/common/LoadingSkeleton';
-import Badge from '../components/common/Badge';
-import Illustration from '../components/common/Illustration';
-import LivingTree from '../components/LivingTree';
-import { Link, useNavigate } from 'react-router-dom';
-import { cn } from '../utils/cn';
-import { getTreeStage, calculateXPProgress } from '../utils/gamification';
-import useAppStore from '../store/useAppStore';
+  AlertCircle,
+} from "lucide-react";
+
+import useDashboardStore from "../store/useDashboardStore";
+import useAuthStore from "../store/useAuthStore";
+import useFriendsStore from "../store/useFriendsStore";
+import useAppStore from "../store/useAppStore";
+
+import StatCard from "../components/dashboard/StatCard";
+import RecentActivity from "../components/dashboard/RecentActivity";
+import GlassCard from "../components/common/GlassCard";
+import Button from "../components/common/Button";
+import LoadingSkeleton from "../components/common/LoadingSkeleton";
+import Badge from "../components/common/Badge";
+import Illustration from "../components/common/Illustration";
+import LivingTree from "../components/LivingTree";
+
+import { Link, useNavigate } from "react-router-dom";
+import { cn } from "../utils/cn";
+import { calculateXPProgress } from "../utils/gamification";
 
 const Dashboard = () => {
-  const { user } = useAuthStore();
-  const { stats, recentActivity, loading, error, fetchDashboardData, skills, sessions } = useDashboardStore();
-  const { activityFeed, fetchActivityFeed } = useFriendsStore();
-  const { setShowCheckInModal, checkMoodToday } = useAppStore();
+  const user = useAuthStore((state) => state.user);
+
+  const stats = useDashboardStore(
+    (state) => state.stats
+  );
+  const recentActivity = useDashboardStore(
+    (state) => state.recentActivity
+  );
+  const loading = useDashboardStore(
+    (state) => state.loading
+  );
+  const error = useDashboardStore(
+    (state) => state.error
+  );
+  const fetchDashboardData = useDashboardStore(
+    (state) => state.fetchDashboardData
+  );
+  const skills = useDashboardStore(
+    (state) => state.skills
+  );
+  const sessions = useDashboardStore(
+    (state) => state.sessions
+  );
+
+  const activityFeed = useFriendsStore(
+    (state) => state.activityFeed
+  );
+  const fetchActivityFeed = useFriendsStore(
+    (state) => state.fetchActivityFeed
+  );
+
+  const setShowCheckInModal = useAppStore(
+    (state) => state.setShowCheckInModal
+  );
+  const checkMoodToday = useAppStore(
+    (state) => state.checkMoodToday
+  );
+
   const [isWatering, setIsWatering] = useState(false);
-  const [checkedInToday, setCheckedInToday] = useState(false);
+  const [checkedInToday, setCheckedInToday] =
+    useState(false);
+
+  const wateringTimeoutRef = useRef(null);
+
   const navigate = useNavigate();
 
+  const safeSkills = Array.isArray(skills)
+    ? skills
+    : [];
+
+  const safeSessions = Array.isArray(sessions)
+    ? sessions
+    : [];
+
+  const safeActivityFeed = Array.isArray(activityFeed)
+    ? activityFeed
+    : [];
+
+  const safeRecentActivity = Array.isArray(
+    recentActivity
+  )
+    ? recentActivity
+    : [];
+
+  // ---------------------------------------------------------
+  // Check today's mood
+  // ---------------------------------------------------------
+
   useEffect(() => {
+    let isMounted = true;
+
     const checkStatus = async () => {
-      const result = await checkMoodToday();
-      setCheckedInToday(result?.hasCheckedInToday || false);
+      try {
+        const result = await checkMoodToday();
+
+        if (!isMounted) return;
+
+        setCheckedInToday(
+          Boolean(result?.hasCheckedInToday)
+        );
+      } catch (error) {
+        console.error(
+          "Failed to check today's mood:",
+          error
+        );
+
+        if (isMounted) {
+          setCheckedInToday(false);
+        }
+      }
     };
+
     if (user) {
       checkStatus();
+    } else {
+      setCheckedInToday(false);
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [user, checkMoodToday]);
 
-  const treeStage = user ? getTreeStage(user.xp) : { name: "Seed", emoji: "🌱" };
-  const xpProgress = user ? calculateXPProgress(user.xp) : { currentLevel: 1, currentXP: 0, xpNeeded: 100, progressPercentage: 0 };
+  // ---------------------------------------------------------
+  // Dashboard data
+  // ---------------------------------------------------------
 
   useEffect(() => {
     fetchDashboardData();
     fetchActivityFeed();
   }, [fetchDashboardData, fetchActivityFeed]);
 
+  // ---------------------------------------------------------
+  // Cleanup watering animation
+  // ---------------------------------------------------------
+
+  useEffect(() => {
+    return () => {
+      if (wateringTimeoutRef.current) {
+        clearTimeout(wateringTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // ---------------------------------------------------------
+  // XP Progress
+  // ---------------------------------------------------------
+
+  const xpProgress = user
+    ? calculateXPProgress(Number(user.xp) || 0)
+    : {
+        currentLevel: 1,
+        currentXP: 0,
+        xpNeeded: 100,
+        progressPercentage: 0,
+      };
+
+  // ---------------------------------------------------------
+  // Greeting
+  // ---------------------------------------------------------
+
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 5) return "Still awake? The stars are watching";
-    if (hour < 12) return "A beautiful morning for growth";
-    if (hour < 18) return "The afternoon sun warms your path";
+
+    if (hour < 5) {
+      return "Still awake? The stars are watching";
+    }
+
+    if (hour < 12) {
+      return "A beautiful morning for growth";
+    }
+
+    if (hour < 18) {
+      return "The afternoon sun warms your path";
+    }
+
     return "A peaceful evening to reflect";
   };
 
+  const getGreetingTitle = () => {
+    const hour = new Date().getHours();
+
+    if (hour < 5) return "Still awake?";
+    if (hour < 12) return "Good Morning,";
+    if (hour < 18) return "Good Afternoon,";
+
+    return "Good Evening,";
+  };
+
+  // ---------------------------------------------------------
+  // Today's Progress
+  // ---------------------------------------------------------
+
   const today = new Date().toDateString();
-  const sessionsToday = sessions.filter(s => new Date(s.completedAt).toDateString() === today);
+
+  const sessionsToday = safeSessions.filter(
+    (session) => {
+      if (!session?.completedAt) return false;
+
+      const date = new Date(session.completedAt);
+
+      if (Number.isNaN(date.getTime())) {
+        return false;
+      }
+
+      return date.toDateString() === today;
+    }
+  );
+
   const hasSessionToday = sessionsToday.length > 0;
-  const lastCheckIn = user?.lastCheckIn ? new Date(user.lastCheckIn).toDateString() : null;
-  const checkedInMoodToday = checkedInToday || (lastCheckIn === today);
+
+  const lastCheckIn = user?.lastCheckIn
+    ? new Date(user.lastCheckIn)
+    : null;
+
+  const lastCheckInDate =
+    lastCheckIn &&
+    !Number.isNaN(lastCheckIn.getTime())
+      ? lastCheckIn.toDateString()
+      : null;
+
+  const checkedInMoodToday =
+    checkedInToday ||
+    lastCheckInDate === today;
+
+  // ---------------------------------------------------------
+  // Watering Animation
+  // ---------------------------------------------------------
+
+  const handleWaterTree = () => {
+    setIsWatering(true);
+
+    if (wateringTimeoutRef.current) {
+      clearTimeout(wateringTimeoutRef.current);
+    }
+
+    wateringTimeoutRef.current = setTimeout(() => {
+      setIsWatering(false);
+      wateringTimeoutRef.current = null;
+    }, 2000);
+
+    setShowCheckInModal(true);
+  };
+
+  // ---------------------------------------------------------
+  // Daily Missions
+  // ---------------------------------------------------------
 
   const missions = [
     {
       id: 1,
       title: "Log a Practice Session",
-      description: "Log any practice session today to nurture your skill branches",
+      description:
+        "Log any practice session today to nurture your skill branches",
       reward: "10 XP",
       icon: Target,
       color: "text-primary-400",
       completed: hasSessionToday,
       buttonLabel: "Log Practice",
-      onClick: () => navigate('/sessions')
+      onClick: () => navigate("/sessions"),
     },
     {
       id: 2,
       title: "Water the Tree",
-      description: "Check in with your mood today to keep your tree hydrated and happy",
+      description:
+        "Check in with your mood today to keep your tree hydrated and happy",
       reward: "5 XP",
       icon: Sparkles,
       color: "text-warm-amber",
       completed: checkedInMoodToday,
       buttonLabel: "Water Tree",
-      onClick: () => setShowCheckInModal(true)
+      onClick: handleWaterTree,
     },
   ];
+
+  // ---------------------------------------------------------
+  // Loading State
+  // ---------------------------------------------------------
 
   if (loading) {
     return (
       <div className="space-y-12">
-        <div className="h-64 w-full bg-white/[0.02] rounded-[3rem] animate-pulse" />
+        <LoadingSkeleton className="h-64 w-full rounded-[3rem]" />
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[1, 2, 3].map(i => <div key={i} className="h-48 bg-white/[0.02] rounded-[2.5rem] animate-pulse" />)}
+          {[1, 2, 3].map((i) => (
+            <LoadingSkeleton
+              key={i}
+              className="h-48 rounded-[2.5rem]"
+            />
+          ))}
         </div>
       </div>
     );
@@ -107,17 +310,33 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-16 pb-24 relative">
+      {/* Error State */}
       {error && (
         <GlassCard className="p-6 border-red-500/20 bg-red-500/5">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-400 shrink-0">
-              <AlertCircle size={20} />
+              <AlertCircle
+                size={20}
+                aria-hidden="true"
+              />
             </div>
+
             <div className="flex-1">
-              <p className="text-white font-bold">Couldn't load your sanctuary data</p>
-              <p className="text-sm text-slate-400">{error}</p>
+              <p className="text-white font-bold">
+                Couldn&apos;t load your sanctuary data
+              </p>
+
+              <p className="text-sm text-slate-400">
+                {error}
+              </p>
             </div>
-            <Button variant="secondary" size="sm" onClick={fetchDashboardData}>
+
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={fetchDashboardData}
+            >
               Retry
             </Button>
           </div>
@@ -126,58 +345,70 @@ const Dashboard = () => {
 
       {/* Tree of Mastery Hero */}
       <section className="relative overflow-hidden rounded-[3.5rem] border border-white/5 shadow-2xl group">
-        {/* Background Gradient for mobile fallback */}
+        {/* Background Gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-forge-900/60 via-forge-950/40 to-forge-950" />
-        
-        {/* Tree Illustration (visible md+) */}
+
+        {/* Desktop Hero */}
         <div className="relative">
-          {/* Overlay Content */}
           <div className="flex flex-col md:flex-row items-center justify-between p-8 md:p-16">
             {/* Left: Greeting & Text */}
             <div className="relative z-10 max-w-lg space-y-8 text-center md:text-left">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warm-amber/60 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-warm-amber"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warm-amber/60 opacity-75" />
+
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-warm-amber" />
                 </span>
-                <span className="text-[10px] font-bold tracking-[0.2em] text-warm-amber uppercase">{getGreeting()}</span>
+
+                <span className="text-[10px] font-bold tracking-[0.2em] text-warm-amber uppercase">
+                  {getGreeting()}
+                </span>
               </div>
 
               <div className="space-y-4">
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white leading-[1.1] italic drop-shadow-lg">
-                  {(() => {
-                    const hour = new Date().getHours();
-                    if (hour < 5) return "Still awake?";
-                    if (hour < 12) return "Good Morning,";
-                    if (hour < 18) return "Good Afternoon,";
-                    return "Good Evening,";
-                  })()}<br />
-                  <span className="text-3xl md:text-4xl">{user?.username}.</span>
+                  {getGreetingTitle()}
+                  <br />
+
+                  <span className="text-3xl md:text-4xl">
+                    {user?.username || "Gardener"}.
+                  </span>
                 </h1>
-                
+
                 <p className="text-lg text-slate-300 font-medium leading-relaxed drop-shadow-md">
-                  The seeds you planted yesterday are growing. 
-                  Every drop of effort makes your tree stronger.
+                  The seeds you planted yesterday are
+                  growing. Every drop of effort makes your
+                  tree stronger.
                 </p>
               </div>
 
               <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-2">
-                <Link to="/sessions">
-                  <Button 
-                    size="lg" 
-                    className="rounded-2xl px-8 py-4 shadow-xl shadow-warm-amber/20 bg-gradient-to-r from-warm-amber to-primary-400 hover:from-warm-amber/90 hover:to-primary-400/90 group/btn"
-                    onClick={() => {
-                      setIsWatering(true);
-                      setTimeout(() => setIsWatering(false), 2000);
-                    }}
-                  >
-                    <Plus size={18} className="mr-2 group-hover/btn:rotate-90 transition-transform duration-500" />
-                    Water Your Tree
-                  </Button>
-                </Link>
+                <Button
+                  type="button"
+                  size="lg"
+                  onClick={handleWaterTree}
+                  className="rounded-2xl px-8 py-4 shadow-xl shadow-warm-amber/20 bg-gradient-to-r from-warm-amber to-primary-400 hover:from-warm-amber/90 hover:to-primary-400/90 group/btn"
+                >
+                  <Plus
+                    size={18}
+                    className="mr-2 group-hover/btn:rotate-90 transition-transform duration-500"
+                  />
+
+                  Water Your Tree
+                </Button>
+
                 <Link to="/skills">
-                  <Button size="lg" variant="outline" className="rounded-2xl px-8 py-4 bg-white/5 border-white/10 hover:bg-white/10">
-                    <BookOpen size={18} className="mr-2" />
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant="outline"
+                    className="rounded-2xl px-8 py-4 bg-white/5 border-white/10 hover:bg-white/10"
+                  >
+                    <BookOpen
+                      size={18}
+                      className="mr-2"
+                    />
+
                     Plant New Seeds
                   </Button>
                 </Link>
@@ -186,11 +417,11 @@ const Dashboard = () => {
 
             {/* Right: Living Tree */}
             <div className="relative z-10 mt-12 md:mt-0 flex-1 max-w-md">
-              <LivingTree 
-                user={user} 
-                skills={skills} 
-                sessions={sessions} 
-                isWatering={isWatering} 
+              <LivingTree
+                user={user}
+                skills={safeSkills}
+                sessions={safeSessions}
+                isWatering={isWatering}
               />
             </div>
           </div>
@@ -199,50 +430,77 @@ const Dashboard = () => {
         {/* Mobile Hero Layout */}
         <div className="md:hidden flex flex-col items-center p-8 text-center space-y-8">
           <div className="relative w-full max-w-xs">
-            <Illustration name="growthTree" className="w-full h-auto opacity-90" />
+            <Illustration
+              name="growthTree"
+              className="w-full h-auto opacity-90"
+            />
           </div>
+
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warm-amber/60 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-warm-amber"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warm-amber/60 opacity-75" />
+
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-warm-amber" />
               </span>
-              <span className="text-[10px] font-bold tracking-[0.2em] text-warm-amber uppercase">{getGreeting()}</span>
+
+              <span className="text-[10px] font-bold tracking-[0.2em] text-warm-amber uppercase">
+                {getGreeting()}
+              </span>
             </div>
+
             <div className="space-y-4">
               <h1 className="text-3xl font-bold tracking-tight text-white leading-[1.1] italic">
-                {(() => {
-                  const hour = new Date().getHours();
-                  if (hour < 5) return "Still awake?";
-                  if (hour < 12) return "Good Morning,";
-                  if (hour < 18) return "Good Afternoon,";
-                  return "Good Evening,";
-                })()}<br />
-                <span className="text-2xl">{user?.username}.</span>
+                {getGreetingTitle()}
+                <br />
+
+                <span className="text-2xl">
+                  {user?.username || "Gardener"}.
+                </span>
               </h1>
+
               <p className="text-sm text-slate-300 font-medium leading-relaxed max-w-sm mx-auto">
-                The seeds you planted yesterday are growing. 
-                Every drop of effort makes your tree stronger.
+                The seeds you planted yesterday are
+                growing. Every drop of effort makes your
+                tree stronger.
               </p>
             </div>
+
             <div className="flex flex-col gap-3 w-full">
-              <Link to="/sessions" className="w-full">
-                <Button size="lg" className="w-full rounded-2xl px-6 py-4 shadow-xl shadow-warm-amber/20 bg-gradient-to-r from-warm-amber to-primary-400">
-                  <Plus size={18} className="mr-2" />
-                  Water Your Tree
-                </Button>
-              </Link>
-              <Link to="/skills" className="w-full">
-                <Button size="lg" variant="outline" className="w-full rounded-2xl px-6 py-4 bg-white/5 border-white/10">
-                  <BookOpen size={18} className="mr-2" />
+              <Button
+                type="button"
+                size="lg"
+                onClick={handleWaterTree}
+                className="w-full rounded-2xl px-6 py-4 shadow-xl shadow-warm-amber/20 bg-gradient-to-r from-warm-amber to-primary-400"
+              >
+                <Plus size={18} className="mr-2" />
+
+                Water Your Tree
+              </Button>
+
+              <Link
+                to="/skills"
+                className="w-full"
+              >
+                <Button
+                  type="button"
+                  size="lg"
+                  variant="outline"
+                  className="w-full rounded-2xl px-6 py-4 bg-white/5 border-white/10"
+                >
+                  <BookOpen
+                    size={18}
+                    className="mr-2"
+                  />
+
                   Plant New Seeds
                 </Button>
               </Link>
             </div>
           </div>
         </div>
-        
-        {/* Atmospheric Glows - keep it subtle */}
+
+        {/* Atmospheric Glows */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] bg-warm-amber/5 rounded-full blur-[100px] animate-glow-pulse" />
         </div>
@@ -254,31 +512,84 @@ const Dashboard = () => {
           <section>
             <div className="flex items-center justify-between mb-8 px-4">
               <div className="flex items-center gap-4">
-                <h3 className="text-2xl font-bold text-white italic">Daily Watering</h3>
+                <h3 className="text-2xl font-bold text-white italic">
+                  Daily Watering
+                </h3>
+
                 <div className="h-[1px] w-12 bg-white/10" />
               </div>
-              <Badge variant="default" className="bg-white/5 text-slate-500 border-none font-bold tracking-widest">RESET AT MIDNIGHT</Badge>
+
+              <Badge
+                variant="default"
+                className="bg-white/5 text-slate-500 border-none font-bold tracking-widest"
+              >
+                RESET AT MIDNIGHT
+              </Badge>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              {missions.map(mission => (
-                <GlassCard key={mission.id} className="p-10 group/card hover:bg-white/[0.04] transition-all duration-700 relative overflow-hidden">
+              {missions.map((mission) => (
+                <GlassCard
+                  key={mission.id}
+                  className="p-10 group/card hover:bg-white/[0.04] transition-all duration-700 relative overflow-hidden"
+                >
                   {mission.completed && (
-                    <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center z-10">
-                      <span className="text-emerald-400 text-lg">✓</span>
+                    <div
+                      className="absolute top-6 right-6 w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center z-10"
+                      aria-label="Completed"
+                    >
+                      <span className="text-emerald-400 text-lg">
+                        ✓
+                      </span>
                     </div>
                   )}
+
                   <div className="flex items-start justify-between mb-8">
-                    <div className={cn("p-5 rounded-3xl bg-white/5 group-hover/card:scale-110 transition-transform duration-700", mission.color, mission.completed && "opacity-50")}>
-                      <mission.icon size={28} />
+                    <div
+                      className={cn(
+                        "p-5 rounded-3xl bg-white/5 group-hover/card:scale-110 transition-transform duration-700",
+                        mission.color,
+                        mission.completed &&
+                          "opacity-50"
+                      )}
+                    >
+                      <mission.icon
+                        size={28}
+                        aria-hidden="true"
+                      />
                     </div>
-                    <div className={cn("px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase", mission.completed ? "bg-emerald-500/10 text-emerald-300" : "bg-primary-500/10 text-primary-300")}>
-                      {mission.completed ? "Claimed" : mission.reward}
+
+                    <div
+                      className={cn(
+                        "px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase",
+                        mission.completed
+                          ? "bg-emerald-500/10 text-emerald-300"
+                          : "bg-primary-500/10 text-primary-300"
+                      )}
+                    >
+                      {mission.completed
+                        ? "Claimed"
+                        : mission.reward}
                     </div>
                   </div>
-                  <h4 className={cn("text-xl font-bold mb-3 italic tracking-tight", mission.completed ? "text-slate-500 line-through" : "text-white")}>{mission.title}</h4>
-                  <p className="text-sm text-slate-500 leading-relaxed font-medium mb-8">{mission.description}</p>
+
+                  <h4
+                    className={cn(
+                      "text-xl font-bold mb-3 italic tracking-tight",
+                      mission.completed
+                        ? "text-slate-500 line-through"
+                        : "text-white"
+                    )}
+                  >
+                    {mission.title}
+                  </h4>
+
+                  <p className="text-sm text-slate-500 leading-relaxed font-medium mb-8">
+                    {mission.description}
+                  </p>
+
                   <button
+                    type="button"
                     onClick={mission.onClick}
                     disabled={mission.completed}
                     className={cn(
@@ -288,7 +599,9 @@ const Dashboard = () => {
                         : "bg-gradient-to-r from-primary-500/20 to-warm-amber/20 text-white hover:from-primary-500/30 hover:to-warm-amber/30 border border-primary-400/20"
                     )}
                   >
-                    {mission.completed ? "Completed" : mission.buttonLabel}
+                    {mission.completed
+                      ? "Completed"
+                      : mission.buttonLabel}
                   </button>
                 </GlassCard>
               ))}
@@ -298,34 +611,90 @@ const Dashboard = () => {
           {/* Growth Journal */}
           <section>
             <div className="flex items-center justify-between mb-8 px-4">
-              <h3 className="text-2xl font-bold text-white italic">Growth Journal</h3>
-              <Link to="/sessions" className="text-xs font-black text-primary-400 hover:text-primary-300 transition-colors uppercase tracking-[0.2em]">Open Journal</Link>
+              <h3 className="text-2xl font-bold text-white italic">
+                Growth Journal
+              </h3>
+
+              <Link
+                to="/sessions"
+                className="text-xs font-black text-primary-400 hover:text-primary-300 transition-colors uppercase tracking-[0.2em]"
+              >
+                Open Journal
+              </Link>
             </div>
-            <RecentActivity activities={recentActivity} />
+
+            <RecentActivity
+              activities={safeRecentActivity}
+            />
           </section>
 
           {/* Community Activity */}
-          {activityFeed.length > 0 && (
+          {safeActivityFeed.length > 0 && (
             <section>
               <div className="flex items-center justify-between mb-8 px-4">
-                <h3 className="text-2xl font-bold text-white italic">Community Activity</h3>
+                <h3 className="text-2xl font-bold text-white italic">
+                  Community Activity
+                </h3>
               </div>
+
               <div className="space-y-4">
-                {activityFeed.map((activity) => (
-                  <GlassCard key={activity._id} className="p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-white font-bold italic">
-                        {(() => { const firstChar = activity.userId?.username?.charAt(0); return firstChar ? firstChar.toUpperCase() : '?'; })()}
-                      </div>
-                      <div>
-                        <p className="text-white font-medium">{activity.description}</p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {new Date(activity.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </GlassCard>
-                ))}
+                {safeActivityFeed.map(
+                  (activity, index) => {
+                    const username =
+                      activity?.userId?.username ||
+                      "User";
+
+                    const firstChar =
+                      String(username)
+                        .charAt(0)
+                        .toUpperCase() || "?";
+
+                    const activityDate =
+                      activity?.createdAt
+                        ? new Date(
+                            activity.createdAt
+                          )
+                        : null;
+
+                    const validDate =
+                      activityDate &&
+                      !Number.isNaN(
+                        activityDate.getTime()
+                      );
+
+                    return (
+                      <GlassCard
+                        key={
+                          activity?._id ||
+                          `${activity?.createdAt || "activity"}-${index}`
+                        }
+                        className="p-6"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div
+                            className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-white font-bold italic shrink-0"
+                            aria-hidden="true"
+                          >
+                            {firstChar}
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="text-white font-medium">
+                              {activity?.description ||
+                                "Community activity"}
+                            </p>
+
+                            <p className="text-xs text-slate-500 mt-1">
+                              {validDate
+                                ? activityDate.toLocaleDateString()
+                                : "Recently"}
+                            </p>
+                          </div>
+                        </div>
+                      </GlassCard>
+                    );
+                  }
+                )}
               </div>
             </section>
           )}
@@ -336,41 +705,85 @@ const Dashboard = () => {
           <GlassCard className="p-10 bg-gradient-to-br from-warm-amber/10 via-transparent to-primary-500/10 border-warm-amber/20 animate-breathing">
             <div className="flex items-center gap-4 mb-10">
               <div className="w-2 h-2 rounded-full bg-warm-amber" />
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Tree Health</h3>
+
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">
+                Tree Health
+              </h3>
             </div>
 
             <div className="space-y-10">
               <div className="flex items-center gap-8">
                 <div className="w-20 h-20 rounded-[2rem] bg-white/5 flex items-center justify-center text-warm-amber border border-white/10 shadow-inner">
-                  <Zap size={40} fill="currentColor" className="animate-pulse" />
+                  <Zap
+                    size={40}
+                    fill="currentColor"
+                    className="animate-pulse"
+                    aria-hidden="true"
+                  />
                 </div>
+
                 <div>
-                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Tree Age</p>
-                  <p className="text-4xl font-bold text-white italic tracking-tighter">Lvl {xpProgress.currentLevel}</p>
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">
+                    Tree Age
+                  </p>
+
+                  <p className="text-4xl font-bold text-white italic tracking-tighter">
+                    Lvl {xpProgress.currentLevel}
+                  </p>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em]">
-                  <span className="text-slate-500">Growth Progress</span>
-                  <span className="text-warm-amber">{xpProgress.currentXP} / {xpProgress.xpNeeded} XP</span>
+                  <span className="text-slate-500">
+                    Growth Progress
+                  </span>
+
+                  <span className="text-warm-amber">
+                    {xpProgress.currentXP} /{" "}
+                    {xpProgress.xpNeeded} XP
+                  </span>
                 </div>
+
                 <div className="h-3 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
                   <div
                     className="h-full bg-gradient-to-r from-warm-amber via-primary-400 to-warm-amber rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(251,191,36,0.3)]"
-                    style={{ width: `${xpProgress.progressPercentage}%` }}
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.max(
+                          0,
+                          Number(
+                            xpProgress.progressPercentage
+                          ) || 0
+                        )
+                      )}%`,
+                    }}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-6">
                 <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                  <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Total Sunlight</p>
-                  <p className="text-xl font-bold text-white">{user?.xp || 0}</p>
+                  <p className="text-[10px] font-black text-slate-500 uppercase mb-1">
+                    Total Sunlight
+                  </p>
+
+                  <p className="text-xl font-bold text-white">
+                    {(
+                      Number(user?.xp) || 0
+                    ).toLocaleString()}
+                  </p>
                 </div>
+
                 <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                  <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Branches</p>
-                  <p className="text-xl font-bold text-white">{stats.totalSkills}</p>
+                  <p className="text-[10px] font-black text-slate-500 uppercase mb-1">
+                    Branches
+                  </p>
+
+                  <p className="text-xl font-bold text-white">
+                    {stats?.totalSkills ?? 0}
+                  </p>
                 </div>
               </div>
             </div>
@@ -379,16 +792,30 @@ const Dashboard = () => {
           {/* Tree Wisdom */}
           <div className="relative group">
             <div className="absolute inset-0 bg-warm-amber/10 blur-[60px] rounded-full group-hover:bg-warm-amber/20 transition-colors duration-1000" />
+
             <GlassCard className="p-10 relative bg-forge-900/40 border-white/5 overflow-hidden">
-              <Sparkles className="absolute -top-6 -right-6 w-32 h-32 text-warm-amber/5 rotate-12" />
+              <Sparkles
+                className="absolute -top-6 -right-6 w-32 h-32 text-warm-amber/5 rotate-12"
+                aria-hidden="true"
+              />
+
               <p className="text-xl font-bold text-white italic leading-relaxed mb-8">
-                "A tree grows slowly, but its roots run deep. Consistency is the water that makes mastery bloom."
+                &quot;A tree grows slowly, but its roots run
+                deep. Consistency is the water that makes
+                mastery bloom.&quot;
               </p>
+
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-warm-amber to-primary-400" />
+
                 <div>
-                  <p className="text-xs font-bold text-white">The Forest Keeper</p>
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tree Wisdom</p>
+                  <p className="text-xs font-bold text-white">
+                    The Forest Keeper
+                  </p>
+
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    Tree Wisdom
+                  </p>
                 </div>
               </div>
             </GlassCard>
@@ -398,6 +825,5 @@ const Dashboard = () => {
     </div>
   );
 };
-
 
 export default Dashboard;

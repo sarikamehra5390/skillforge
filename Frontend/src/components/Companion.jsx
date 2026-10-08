@@ -1,57 +1,77 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import useSanctuaryStore from "../store/useSanctuaryStore";
 import { COMPANION_OPTIONS } from "../utils/sanctuary";
 
 const Companion = () => {
   const { settings } = useSanctuaryStore();
+
   const [isBlinking, setIsBlinking] = useState(false);
-  const [position, setPosition] = useState({ x: -10, y: 0 });
-  const [direction, setDirection] = useState(1); // 1 for right, -1 for left
+  const [position, setPosition] = useState(-10);
+  const [direction, setDirection] = useState(1); // 1 = right, -1 = left
 
-  const companionData = COMPANION_OPTIONS.find((c) => c.id === settings?.companion);
+  const companionData = COMPANION_OPTIONS.find(
+    (companion) => companion.id === settings?.companion
+  );
 
-  // Blink animation trigger
+  // Blink animation
   useEffect(() => {
-    const blinkInterval = setInterval(() => {
-      setIsBlinking(true);
-      setTimeout(() => setIsBlinking(false), 200);
-    }, 3000 + Math.random() * 2000); // Random interval 3-5s
-    return () => clearInterval(blinkInterval);
+    let blinkTimer;
+    let blinkEndTimer;
+
+    const scheduleBlink = () => {
+      const delay = 3000 + Math.random() * 2000;
+
+      blinkTimer = setTimeout(() => {
+        setIsBlinking(true);
+
+        blinkEndTimer = setTimeout(() => {
+          setIsBlinking(false);
+          scheduleBlink();
+        }, 200);
+      }, delay);
+    };
+
+    scheduleBlink();
+
+    return () => {
+      clearTimeout(blinkTimer);
+      clearTimeout(blinkEndTimer);
+    };
   }, []);
 
   // Walking animation
   useEffect(() => {
     const walkInterval = setInterval(() => {
-      setPosition((prev) => {
-        let newX = prev.x + direction * 5;
-        let newDir = direction;
-        
-        // Boundary check (keep within ~200px range)
+      setPosition((prevX) => {
+        let newX = prevX + direction * 5;
+
         if (newX > 190) {
           newX = 190;
-          newDir = -1;
+          setDirection(-1);
         } else if (newX < -190) {
           newX = -190;
-          newDir = 1;
+          setDirection(1);
         }
-        
-        setDirection(newDir);
-        return { x: newX, y: 0 };
+
+        return newX;
       });
     }, 100);
+
     return () => clearInterval(walkInterval);
   }, [direction]);
 
-  if (!companionData) return null;
+  if (!companionData) {
+    return null;
+  }
 
   return (
     <motion.div
-      className="fixed bottom-10 left-1/2 -translate-x-1/2 text-6xl z-40"
-      style={{ x: position.x }}
+      className="fixed bottom-10 left-1/2 z-40 -translate-x-1/2 text-6xl"
+      style={{ x: position }}
       animate={{
-        y: [0, -5, 0], // Floating animation
-        rotate: [0, 2, 0, -2, 0], // Idle swaying
+        y: [0, -5, 0],
+        rotate: [0, 2, 0, -2, 0],
         scale: isBlinking ? 0.95 : 1,
       }}
       transition={{
@@ -69,8 +89,16 @@ const Companion = () => {
           duration: 0.1,
         },
       }}
+      aria-label={`${companionData.name || "Companion"}`}
+      role="img"
     >
-      <span style={{ transform: direction === -1 ? "scaleX(-1)" : "none", display: "inline-block" }}>
+      <span
+        style={{
+          transform:
+            direction === -1 ? "scaleX(-1)" : "none",
+          display: "inline-block",
+        }}
+      >
         {companionData.emoji}
       </span>
     </motion.div>

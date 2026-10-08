@@ -1,7 +1,14 @@
 import React, { useId } from 'react';
 import { cn } from '../../utils/cn';
 
-const Input = ({ label, error, className, icon: Icon, id, ...props }) => {
+const Input = ({
+  label,
+  error,
+  className,
+  icon: Icon,
+  id,
+  ...props
+}) => {
   const generatedId = useId();
   const inputId = id || generatedId;
 
@@ -10,7 +17,7 @@ const Input = ({ label, error, className, icon: Icon, id, ...props }) => {
       {label && (
         <label
           htmlFor={inputId}
-          className="text-xs font-medium ml-1"
+          className="ml-1 text-xs font-medium"
           style={{ color: 'var(--text-secondary)' }}
         >
           {label}
@@ -20,7 +27,7 @@ const Input = ({ label, error, className, icon: Icon, id, ...props }) => {
       <div className="relative">
         {Icon && (
           <Icon
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
             style={{ color: 'var(--text-secondary)' }}
             aria-hidden="true"
           />
@@ -29,8 +36,8 @@ const Input = ({ label, error, className, icon: Icon, id, ...props }) => {
         <input
           id={inputId}
           className={cn(
-            "w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all duration-200",
-            Icon && "pl-10",
+            'w-full rounded-xl px-4 py-2.5 text-sm transition-all duration-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60',
+            Icon && 'pl-10',
             className
           )}
           style={{
@@ -41,7 +48,9 @@ const Input = ({ label, error, className, icon: Icon, id, ...props }) => {
             color: 'var(--text)',
           }}
           aria-invalid={error ? 'true' : undefined}
-          aria-describedby={error ? `${inputId}-error` : undefined}
+          aria-describedby={
+            error ? `${inputId}-error` : undefined
+          }
           {...props}
         />
       </div>
@@ -49,8 +58,9 @@ const Input = ({ label, error, className, icon: Icon, id, ...props }) => {
       {error && (
         <p
           id={`${inputId}-error`}
-          className="text-[10px] ml-1"
+          className="ml-1 text-[10px]"
           style={{ color: 'rgba(239,68,68,1)' }}
+          role="alert"
         >
           {error}
         </p>

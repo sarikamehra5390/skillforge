@@ -61,7 +61,7 @@ const Button = ({
     <button
       type={type}
       className={cn(
-        'inline-flex items-center justify-center rounded-xl font-semibold tracking-wide transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none',
+        'inline-flex cursor-pointer items-center justify-center rounded-xl font-semibold tracking-wide transition-all duration-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50',
         variantClass,
         sizeClass,
         className

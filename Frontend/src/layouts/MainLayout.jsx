@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import CheckInModal from "../components/CheckInModal";
@@ -6,89 +7,142 @@ import CustomizeSanctuaryModal from "../components/CustomizeSanctuaryModal";
 import Companion from "../components/Companion";
 import Decorations from "../components/Decorations";
 import Ambience from "../components/Ambience";
+
 import useAppStore from "../store/useAppStore";
 import useAuthStore from "../store/useAuthStore";
 import useSanctuaryStore from "../store/useSanctuaryStore";
 
 function MainLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] =
+    useState(false);
 
-  const {
-    showCheckInModal,
-    setShowCheckInModal,
-    checkMoodToday,
-  } = useAppStore();
+  const showCheckInModal = useAppStore(
+    (state) => state.showCheckInModal
+  );
 
-  const {
-    fetchSettings,
-    settings,
-    initializeFromLocal,
-  } = useSanctuaryStore();
+  const setShowCheckInModal = useAppStore(
+    (state) => state.setShowCheckInModal
+  );
+
+  const checkMoodToday = useAppStore(
+    (state) => state.checkMoodToday
+  );
+
+  const fetchSettings = useSanctuaryStore(
+    (state) => state.fetchSettings
+  );
+
+  const settings = useSanctuaryStore(
+    (state) => state.settings
+  );
+
+  const initializeFromLocal =
+    useSanctuaryStore(
+      (state) => state.initializeFromLocal
+    );
 
   const isAuthenticated = useAuthStore(
     (state) => state.isAuthenticated
   );
 
-  const activeAmbience = settings?.music || [];
+  const activeAmbience = Array.isArray(
+    settings?.music
+  )
+    ? settings.music
+    : [];
 
   // Generate firefly properties only once.
   // This prevents them from jumping to new positions
   // whenever MainLayout rerenders.
   const fireflies = useMemo(
     () =>
-      Array.from({ length: 12 }, (_, i) => ({
-        id: i,
-        duration: `${10 + Math.random() * 15}s`,
-        x: `${(Math.random() - 0.5) * 600}px`,
-        y: `${(Math.random() - 0.5) * 600}px`,
-        top: `${Math.random() * 100}%`,
-        left: `${Math.random() * 100}%`,
-        animationDelay: `${Math.random() * 10}s`,
-      })),
+      Array.from(
+        { length: 12 },
+        (_, index) => ({
+          id: index,
+          duration: `${
+            10 + Math.random() * 15
+          }s`,
+          x: `${
+            (Math.random() - 0.5) * 600
+          }px`,
+          y: `${
+            (Math.random() - 0.5) * 600
+          }px`,
+          top: `${Math.random() * 100}%`,
+          left: `${Math.random() * 100}%`,
+          animationDelay: `${
+            Math.random() * 10
+          }s`,
+        })
+      ),
     []
   );
 
+  // Set initial sidebar state based on viewport.
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const isDesktop = window.matchMedia(
+    if (
+      typeof window === "undefined"
+    ) {
+      return;
+    }
+
+    const isDesktop =
+      window.matchMedia(
         "(min-width: 768px)"
       ).matches;
 
-      setSidebarOpen(isDesktop);
-    }
+    setSidebarOpen(isDesktop);
   }, []);
 
+  // Initialize user-specific data.
   useEffect(() => {
     if (!isAuthenticated) {
       initializeFromLocal();
       return;
     }
 
-    const initializeAuthenticatedUser = async () => {
-      try {
-        const { hasCheckedInToday } = await checkMoodToday();
+    let cancelled = false;
 
-        if (!hasCheckedInToday) {
-          setShowCheckInModal(true);
+    const initializeAuthenticatedUser =
+      async () => {
+        try {
+          const {
+            hasCheckedInToday,
+          } = await checkMoodToday();
+
+          if (
+            !cancelled &&
+            !hasCheckedInToday
+          ) {
+            setShowCheckInModal(true);
+          }
+        } catch (error) {
+          if (!cancelled) {
+            console.error(
+              "Failed to check today's mood:",
+              error
+            );
+          }
         }
-      } catch (error) {
-        console.error(
-          "Failed to check today's mood:",
-          error
-        );
-      }
 
-      try {
-        await fetchSettings();
-      } catch (error) {
-        console.error(
-          "Failed to fetch sanctuary settings:",
-          error
-        );
-      }
-    };
+        try {
+          await fetchSettings();
+        } catch (error) {
+          if (!cancelled) {
+            console.error(
+              "Failed to fetch sanctuary settings:",
+              error
+            );
+          }
+        }
+      };
 
     initializeAuthenticatedUser();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     isAuthenticated,
     checkMoodToday,
@@ -98,39 +152,50 @@ function MainLayout({ children }) {
   ]);
 
   return (
-    <div className="flex h-screen w-screen ambient-bg overflow-hidden overflow-x-hidden font-sans selection:bg-primary-500/30">
+    <div className="ambient-bg flex h-screen w-screen overflow-hidden overflow-x-hidden font-sans selection:bg-primary-500/30">
       {/* Background Magical Elements */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary-500/10 rounded-full blur-[120px] animate-glow-pulse" />
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="animate-glow-pulse absolute left-[-10%] top-[-10%] h-[40%] w-[40%] rounded-full bg-primary-500/10 blur-[120px]" />
 
         <div
-          className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary-500/10 rounded-full blur-[120px] animate-glow-pulse"
-          style={{ animationDelay: "5s" }}
+          className="animate-glow-pulse absolute bottom-[-10%] right-[-10%] h-[40%] w-[40%] rounded-full bg-secondary-500/10 blur-[120px]"
+          style={{
+            animationDelay: "5s",
+          }}
         />
 
         {/* Fireflies */}
-        {activeAmbience.includes("fireflies") &&
+        {activeAmbience.includes(
+          "fireflies"
+        ) &&
           fireflies.map((firefly) => (
             <div
               key={firefly.id}
               className="firefly"
               style={{
-                "--duration": firefly.duration,
+                "--duration":
+                  firefly.duration,
                 "--x": firefly.x,
                 "--y": firefly.y,
                 top: firefly.top,
                 left: firefly.left,
-                animationDelay: firefly.animationDelay,
+                animationDelay:
+                  firefly.animationDelay,
               }}
+              aria-hidden="true"
             />
           ))}
       </div>
 
       {/* Mobile Sidebar Backdrop */}
       {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
+        <button
+          type="button"
+          aria-label="Close navigation menu"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          onClick={() =>
+            setSidebarOpen(false)
+          }
         />
       )}
 
@@ -139,11 +204,13 @@ function MainLayout({ children }) {
         setSidebarOpen={setSidebarOpen}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 w-0 relative z-10">
-        <Navbar setSidebarOpen={setSidebarOpen} />
+      <div className="relative z-10 flex min-w-0 w-0 flex-1 flex-col">
+        <Navbar
+          setSidebarOpen={setSidebarOpen}
+        />
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 custom-scrollbar">
-          <div className="max-w-7xl mx-auto w-full min-w-0">
+        <main className="custom-scrollbar flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8">
+          <div className="mx-auto w-full min-w-0 max-w-7xl">
             {children}
           </div>
         </main>
@@ -151,7 +218,9 @@ function MainLayout({ children }) {
 
       <CheckInModal
         isOpen={showCheckInModal}
-        onClose={() => setShowCheckInModal(false)}
+        onClose={() =>
+          setShowCheckInModal(false)
+        }
       />
 
       <CustomizeSanctuaryModal />

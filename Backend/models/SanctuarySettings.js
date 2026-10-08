@@ -8,59 +8,134 @@ const sanctuarySettingsSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+
     theme: {
-    type: String,
-    enum: ["classic", "sunset-garden", "moonlit-forest", "sakura-valley", "ghibli-sky", "rainy-evening", "starry-meadow"],
-    default: "classic",
+      type: String,
+      enum: [
+        "classic",
+        "sunset-garden",
+        "moonlit-forest",
+        "sakura-valley",
+        "ghibli-sky",
+        "rainy-evening",
+        "starry-meadow",
+      ],
+      default: "classic",
     },
+
     treeType: {
       type: String,
-      enum: ["sprout", "classic", "sakura", "autumn", "winter", "cosmic", "golden"],
+      enum: [
+        "sprout",
+        "classic",
+        "sakura",
+        "autumn",
+        "winter",
+        "cosmic",
+        "golden",
+      ],
       default: "sprout",
     },
+
     companion: {
-    type: String,
-    enum: ["blue-bird", "fox", "cat", "bunny", "deer", "owl", "baby-dragon", "fire-spirit"],
-    default: null, // None
+      type: String,
+      enum: [
+        "blue-bird",
+        "fox",
+        "cat",
+        "bunny",
+        "deer",
+        "owl",
+        "baby-dragon",
+        "fire-spirit",
+      ],
+      default: null,
     },
+
     music: {
       type: [String],
-      enum: ["fireflies", "rain", "snow", "leaves", "wind", "fog", "stars", "birds", "night-mode", "nature-sounds", "rain-sounds", "bird-sounds", "wind-sounds"],
+      enum: [
+        "fireflies",
+        "rain",
+        "snow",
+        "leaves",
+        "wind",
+        "fog",
+        "stars",
+        "birds",
+        "night-mode",
+        "nature-sounds",
+        "rain-sounds",
+        "bird-sounds",
+        "wind-sounds",
+      ],
       default: ["fireflies"],
     },
+
     decorations: {
       type: [String],
-      enum: ["lanterns", "flowers", "butterflies", "bridge", "campfire", "bench", "crystals", "wind-chimes", "waterfall", "stone-path"],
+      enum: [
+        "lanterns",
+        "flowers",
+        "butterflies",
+        "bridge",
+        "campfire",
+        "bench",
+        "crystals",
+        "wind-chimes",
+        "waterfall",
+        "stone-path",
+      ],
       default: [],
     },
+
     displayName: {
       type: String,
       default: "",
+      trim: true,
     },
+
     avatar: {
       type: String,
       default: "",
+      trim: true,
     },
+
     bio: {
       type: String,
       default: "",
+      trim: true,
+      maxlength: 300,
     },
+
     favoriteSkill: {
       type: String,
       default: "",
+      trim: true,
     },
+
     profileFrame: {
       type: String,
       enum: ["none", "gold", "silver", "bronze"],
       default: "none",
     },
+
     avatarColor: {
       type: String,
       default: "from-primary-400 to-secondary-400",
+      trim: true,
     },
+
     title: {
       type: String,
-      enum: ["beginner", "streak-master", "tree-keeper", "forest-guardian", "ancient-sage", "world-tree-guardian"],
+      enum: [
+        "beginner",
+        "streak-master",
+        "tree-keeper",
+        "forest-guardian",
+        "ancient-sage",
+        "world-tree-guardian",
+      ],
       default: "beginner",
     },
   },
@@ -69,4 +144,7 @@ const sanctuarySettingsSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("SanctuarySettings", sanctuarySettingsSchema);
+module.exports = mongoose.model(
+  "SanctuarySettings",
+  sanctuarySettingsSchema
+);

@@ -1,99 +1,151 @@
 import React, {
   createContext,
   useContext,
-  useState,
   useEffect,
   useMemo,
+  useState,
 } from "react";
-import { TREE_OPTIONS } from "../utils/sanctuary";
-import { loadSanctuaryFromStorage } from "../utils/sanctuaryStorage";
 import { toast } from "sonner";
+
+import { TREE_OPTIONS } from "../utils/sanctuary";
+import {
+  loadSanctuaryFromStorage,
+} from "../utils/sanctuaryStorage";
+
 import useSanctuaryStore from "../store/useSanctuaryStore";
 import useAuthStore from "../store/useAuthStore";
 
 const TreeContext = createContext(null);
 
-export const TreeProvider = ({ children }) => {
-  const { user } = useAuthStore();
-  const { settings, updateSettings } = useSanctuaryStore();
+const UNLOCKED_TREES_STORAGE_KEY =
+  "skillForgeUnlockedTrees";
 
-  const [selectedTree, setSelectedTreeState] = useState("sprout");
-
-  const userLevel = user?.level || 0;
-
-  const unlockedTrees = useMemo(
-    () =>
-      TREE_OPTIONS
-        .filter((tree) => tree.unlockLevel <= userLevel)
-        .map((tree) => tree.id),
-    [userLevel]
+export const TreeProvider = ({
+  children,
+}) => {
+  const user = useAuthStore(
+    (state) => state.user
   );
+
+  const settings = useSanctuaryStore(
+    (state) => state.settings
+  );
+
+  const updateSettings = useSanctuaryStore(
+    (state) => state.updateSettings
+  );
+
+  const [selectedTree, setSelectedTreeState] =
+    useState("sprout");
+
+  const userLevel =
+    Number(user?.level) || 1;
+
+  const unlockedTrees = useMemo(() => {
+    return TREE_OPTIONS
+      .filter(
+        (tree) =>
+          Number(tree?.unlockLevel) <=
+          userLevel
+      )
+      .map((tree) => tree.id);
+  }, [userLevel]);
 
   // Show notifications for newly unlocked trees
   useEffect(() => {
-    if (!user) return;
-
-    const storedUnlocked =
-      localStorage.getItem("skillForgeUnlockedTrees") || "[]";
-
-    let storedArray;
-
-    try {
-      storedArray = JSON.parse(storedUnlocked);
-
-      if (!Array.isArray(storedArray)) {
-        storedArray = [];
-      }
-    } catch {
-      storedArray = [];
+    if (
+      !user ||
+      typeof window === "undefined"
+    ) {
+      return;
     }
 
-    const newlyUnlocked = unlockedTrees.filter(
-      (treeId) => !storedArray.includes(treeId)
-    );
+    let storedArray = [];
 
-    if (newlyUnlocked.length > 0) {
-      newlyUnlocked.forEach((treeId) => {
-        const treeData = TREE_OPTIONS.find(
+    try {
+      const storedUnlocked =
+        localStorage.getItem(
+          UNLOCKED_TREES_STORAGE_KEY
+        );
+
+      if (storedUnlocked) {
+        const parsed =
+          JSON.parse(storedUnlocked);
+
+        if (Array.isArray(parsed)) {
+          storedArray = parsed;
+        }
+      }
+    } catch (error) {
+      console.warn(
+        "Failed to read unlocked tree history:",
+        error
+      );
+    }
+
+    const newlyUnlocked =
+      unlockedTrees.filter(
+        (treeId) =>
+          !storedArray.includes(treeId)
+      );
+
+    newlyUnlocked.forEach((treeId) => {
+      const treeData =
+        TREE_OPTIONS.find(
           (tree) => tree.id === treeId
         );
 
-        if (treeData) {
-          toast.success(
-            `${treeData.emoji} ${treeData.name} Unlocked!`,
-            {
-              duration: 5000,
-              position: "top-center",
-            }
-          );
-        }
-      });
-    }
+      if (!treeData) {
+        return;
+      }
 
-    // Keep localStorage synchronized with currently unlocked trees
-    localStorage.setItem(
-      "skillForgeUnlockedTrees",
-      JSON.stringify(unlockedTrees)
-    );
+      toast.success(
+        `${treeData.emoji} ${treeData.name} Unlocked!`,
+        {
+          duration: 5000,
+          position: "top-center",
+        }
+      );
+    });
+
+    try {
+      localStorage.setItem(
+        UNLOCKED_TREES_STORAGE_KEY,
+        JSON.stringify(unlockedTrees)
+      );
+    } catch (error) {
+      console.warn(
+        "Failed to save unlocked tree history:",
+        error
+      );
+    }
   }, [user, unlockedTrees]);
 
   // Restore selected tree from settings/storage
   useEffect(() => {
-    const storedTree = loadSanctuaryFromStorage()?.treeType;
+    const storedTree =
+      typeof window !== "undefined"
+        ? loadSanctuaryFromStorage()?.treeType
+        : null;
 
     const treeType =
       settings?.treeType ||
       user?.sanctuarySettings?.treeType ||
       storedTree;
 
-    if (treeType && unlockedTrees.includes(treeType)) {
+    if (
+      treeType &&
+      unlockedTrees.includes(treeType)
+    ) {
       setSelectedTreeState(treeType);
       return;
     }
 
     // Fallback to the first unlocked tree
     if (unlockedTrees.length > 0) {
-      setSelectedTreeState(unlockedTrees[0]);
+      setSelectedTreeState(
+        unlockedTrees[0]
+      );
     }
   }, [
     settings?.treeType,
@@ -102,12 +154,17 @@ export const TreeProvider = ({ children }) => {
   ]);
 
   const selectTree = (treeId) => {
-    if (!unlockedTrees.includes(treeId)) {
+    if (
+      !unlockedTrees.includes(treeId)
+    ) {
       return;
     }
 
     setSelectedTreeState(treeId);
-    updateSettings({ treeType: treeId });
+
+    updateSettings({
+      treeType: treeId,
+    });
   };
 
   return (
@@ -126,10 +183,13 @@ export const TreeProvider = ({ children }) => {
 };
 
 export const useTree = () => {
-  const context = useContext(TreeContext);
+  const context =
+    useContext(TreeContext);
 
   if (!context) {
-    throw new Error("useTree must be used within a TreeProvider");
+    throw new Error(
+      "useTree must be used within a TreeProvider"
+    );
   }
 
   return context;

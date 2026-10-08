@@ -2,66 +2,127 @@ const express = require("express");
 const mongoose = require("mongoose");
 const Notification = require("../models/Notification");
 const auth = require("../middleware/auth");
+
 const router = express.Router();
 
 const { isValidObjectId } = mongoose.Types;
 
-// Get all notifications for user
+// Get all notifications for the authenticated user
 router.get("/", auth, async (req, res) => {
   try {
-    const notifications = await Notification.find({ userId: req.user._id }).sort({ createdAt: -1 });
-    res.json(notifications);
+    const notifications = await Notification.find({
+      userId: req.user._id,
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.json(notifications);
   } catch (error) {
     console.error("GET notifications error:", error);
-    res.status(500).json({ message: error.message });
+
+    return res.status(500).json({
+      message: error.message || "Failed to fetch notifications",
+    });
   }
 });
 
 // Mark notification as read
 router.put("/:id/read", auth, async (req, res) => {
   try {
-    if (!isValidObjectId(req.params.id)) {
-      return res.status(400).json({ message: "Invalid ID format" });
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        message: "Invalid ID format",
+      });
     }
+
     const notification = await Notification.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
-      { read: true },
-      { new: true }
+      {
+        _id: id,
+        userId: req.user._id,
+      },
+      {
+        $set: { read: true },
+      },
+      {
+        new: true,
+      }
     );
-    if (!notification) return res.status(404).json({ message: "Notification not found" });
-    res.json(notification);
+
+    if (!notification) {
+      return res.status(404).json({
+        message: "Notification not found",
+      });
+    }
+
+    return res.json(notification);
   } catch (error) {
     console.error("Update notification error:", error);
-    res.status(400).json({ message: error.message });
+
+    return res.status(400).json({
+      message: error.message || "Failed to update notification",
+    });
   }
 });
 
 // Mark all notifications as read
 router.put("/mark-all-read", auth, async (req, res) => {
   try {
-    await Notification.updateMany(
-      { userId: req.user._id, read: false },
-      { read: true }
+    const result = await Notification.updateMany(
+      {
+        userId: req.user._id,
+        read: false,
+      },
+      {
+        $set: { read: true },
+      }
     );
-    res.json({ message: "All notifications marked as read" });
+
+    return res.json({
+      message: "All notifications marked as read",
+      updatedCount: result.modifiedCount,
+    });
   } catch (error) {
     console.error("Mark all read error:", error);
-    res.status(400).json({ message: error.message });
+
+    return res.status(400).json({
+      message: error.message || "Failed to mark notifications as read",
+    });
   }
 });
 
 // Delete notification
 router.delete("/:id", auth, async (req, res) => {
   try {
-    if (!isValidObjectId(req.params.id)) {
-      return res.status(400).json({ message: "Invalid ID format" });
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        message: "Invalid ID format",
+      });
     }
-    const notification = await Notification.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
-    if (!notification) return res.status(404).json({ message: "Notification not found" });
-    res.json({ message: "Notification deleted successfully" });
+
+    const notification = await Notification.findOneAndDelete({
+      _id: id,
+      userId: req.user._id,
+    });
+
+    if (!notification) {
+      return res.status(404).json({
+        message: "Notification not found",
+      });
+    }
+
+    return res.json({
+      message: "Notification deleted successfully",
+    });
   } catch (error) {
     console.error("Delete notification error:", error);
-    res.status(500).json({ message: error.message });
+
+    return res.status(500).json({
+      message: error.message || "Failed to delete notification",
+    });
   }
 });
 

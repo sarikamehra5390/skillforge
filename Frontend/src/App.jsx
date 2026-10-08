@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Toaster } from 'sonner';
+import { Toaster } from "sonner";
 
 import Dashboard from "./pages/Dashboard";
 import Skills from "./pages/Skills";
@@ -24,14 +24,29 @@ import { TreeProvider } from "./context/TreeContext";
 
 function App() {
   return (
-    <ThemeProvider>
-      <TreeProvider>
-        <BrowserRouter>
-          <Toaster position="top-right" theme="dark" closeButton richColors />
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+    <BrowserRouter>
+      <ThemeProvider>
+        <TreeProvider>
+          <Toaster
+            position="top-right"
+            theme="dark"
+            closeButton
+            richColors
+          />
 
+          <Routes>
+            {/* Public routes */}
+            <Route
+              path="/login"
+              element={<Login />}
+            />
+
+            <Route
+              path="/register"
+              element={<Register />}
+            />
+
+            {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
               <Route
                 path="/"
@@ -41,6 +56,7 @@ function App() {
                   </MainLayout>
                 }
               />
+
               <Route
                 path="/skills"
                 element={
@@ -49,6 +65,7 @@ function App() {
                   </MainLayout>
                 }
               />
+
               <Route
                 path="/sessions"
                 element={
@@ -57,6 +74,7 @@ function App() {
                   </MainLayout>
                 }
               />
+
               <Route
                 path="/analytics"
                 element={
@@ -65,6 +83,7 @@ function App() {
                   </MainLayout>
                 }
               />
+
               <Route
                 path="/achievements"
                 element={
@@ -73,6 +92,7 @@ function App() {
                   </MainLayout>
                 }
               />
+
               <Route
                 path="/profile"
                 element={
@@ -81,6 +101,7 @@ function App() {
                   </MainLayout>
                 }
               />
+
               <Route
                 path="/friends"
                 element={
@@ -89,6 +110,7 @@ function App() {
                   </MainLayout>
                 }
               />
+
               <Route
                 path="/search"
                 element={
@@ -97,6 +119,7 @@ function App() {
                   </MainLayout>
                 }
               />
+
               <Route
                 path="/friend/:friendId"
                 element={
@@ -105,6 +128,7 @@ function App() {
                   </MainLayout>
                 }
               />
+
               <Route
                 path="/garden"
                 element={
@@ -113,6 +137,7 @@ function App() {
                   </MainLayout>
                 }
               />
+
               <Route
                 path="/account"
                 element={
@@ -121,6 +146,7 @@ function App() {
                   </MainLayout>
                 }
               />
+
               <Route
                 path="/notifications"
                 element={
@@ -131,12 +157,15 @@ function App() {
               />
             </Route>
 
-            <Route path="/404" element={<NotFound />} />
-            <Route path="*" element={<NotFound />} />
+            {/* Fallback */}
+            <Route
+              path="*"
+              element={<NotFound />}
+            />
           </Routes>
-        </BrowserRouter>
-      </TreeProvider>
-    </ThemeProvider>
+        </TreeProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
 
