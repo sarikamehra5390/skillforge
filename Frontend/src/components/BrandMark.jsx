@@ -1,12 +1,12 @@
 const BrandMark = ({ className = "" }) => (
   <span
-    className={`relative inline-flex h-12 w-12 shrink-0 overflow-hidden rounded-2xl bg-[#fffdf7] shadow-lg ${className}`}
+    className={`relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-400/20 to-pink-400/20 shadow-lg ring-1 ring-white/10 ${className}`}
     aria-hidden="true"
   >
     <img
-      src="/brand/skillforge-logo.png"
+      src="/brand/skillforge-fox.png"
       alt=""
-      className="absolute left-[-21px] top-[-1px] h-auto w-[94px] max-w-none"
+      className="h-full w-full object-contain p-1"
     />
   </span>
 );

@@ -8,6 +8,7 @@ import {
   ACHIEVEMENTS,
 } from "../utils/gamification";
 import { useTree } from "../context/useTree";
+import useSanctuaryStore from "../store/useSanctuaryStore";
 
 const EMPTY_LIST = [];
 
@@ -30,7 +31,8 @@ const LivingTree = ({
   const [selectedBranch, setSelectedBranch] =
     useState(null);
 
-  const { selectedTree: selectedTreeType } = useTree();
+  const { selectedTree: selectedTreeType, treeAura } = useTree();
+  const ambientEffects = useSanctuaryStore((state) => state.settings?.ambientEffects !== false);
 
   const xp = Number(user?.xp) || 0;
   const level = Number(user?.level) || 1;
@@ -72,6 +74,17 @@ const LivingTree = ({
     <div className="relative flex h-96 w-full flex-col items-center justify-center">
       {/* Glowing living plant, with the existing skill branches and earned decorations layered above it. */}
       <div className="relative flex h-[270px] w-[270px] items-center justify-center sm:h-[320px] sm:w-[320px]">
+        {ambientEffects && treeAura !== "none" && (
+          <div className={`tree-aura tree-aura-${treeAura}`} aria-hidden="true">
+            {treeAura === "celestial-glow" && (
+              <>
+                <span className="tree-aura-star tree-aura-star-one" />
+                <span className="tree-aura-star tree-aura-star-two" />
+                <span className="tree-aura-star tree-aura-star-three" />
+              </>
+            )}
+          </div>
+        )}
         <motion.div
           animate={{ boxShadow: isWatering ? `0 0 70px 18px ${glow}66` : `0 0 44px 8px ${glow}42` }}
           transition={{ duration: 0.7 }}

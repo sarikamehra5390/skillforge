@@ -19,6 +19,7 @@ const VALID_TABS = [
   "companion",
   "music",
   "decorations",
+  "presets",
   "profile",
 ];
 
@@ -32,6 +33,12 @@ const useSanctuaryStore = create((set, get) => {
   const mergeSettings = (settings = {}) => ({
     ...DEFAULT_SANCTUARY_SETTINGS,
     ...settings,
+    audioLayers: Array.isArray(settings.audioLayers) && (settings.audioLayers.length || settings.audioTrack === "none")
+      ? settings.audioLayers
+      : settings.audioTrack && settings.audioTrack !== "none"
+        ? [{ soundId: settings.audioTrack, volume: 1, muted: false }]
+        : [],
+    masterVolume: Number.isFinite(settings.masterVolume) ? settings.masterVolume : (Number.isFinite(settings.audioVolume) ? settings.audioVolume : DEFAULT_SANCTUARY_SETTINGS.masterVolume),
   });
 
   const applySettings = (settings = {}) => {
@@ -264,9 +271,24 @@ const useSanctuaryStore = create((set, get) => {
         loadSanctuaryFromStorage() ||
         DEFAULT_SANCTUARY_SETTINGS;
 
+      const normalizedUpdates = { ...updates };
+      if (Array.isArray(normalizedUpdates.audioLayers)) {
+        normalizedUpdates.audioTrack = normalizedUpdates.audioLayers[0]?.soundId || "none";
+      }
+      if (Number.isFinite(normalizedUpdates.masterVolume)) {
+        normalizedUpdates.audioVolume = normalizedUpdates.masterVolume;
+      } else if (Number.isFinite(normalizedUpdates.audioVolume)) {
+        normalizedUpdates.masterVolume = normalizedUpdates.audioVolume;
+      }
+      if (normalizedUpdates.audioTrack && !Array.isArray(normalizedUpdates.audioLayers)) {
+        normalizedUpdates.audioLayers = normalizedUpdates.audioTrack === "none"
+          ? []
+          : [{ soundId: normalizedUpdates.audioTrack, volume: 1, muted: false }];
+      }
+
       const newSettings = mergeSettings({
         ...current,
-        ...updates,
+        ...normalizedUpdates,
       });
 
       set({
@@ -287,7 +309,7 @@ const useSanctuaryStore = create((set, get) => {
         persistVersion;
 
       const isTextUpdate =
-        Object.keys(updates).some((key) =>
+        Object.keys(normalizedUpdates).some((key) =>
           TEXT_FIELDS.includes(key)
         );
 

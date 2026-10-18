@@ -15,8 +15,11 @@ import {
   MUSIC_OPTIONS,
   DECORATION_OPTIONS,
   PROFILE_FRAMES,
+  TREE_AURA_OPTIONS,
+  SANCTUARY_PRESETS,
 } from "../utils/sanctuary";
 import { X, Lock } from "lucide-react";
+import SoundSanctuaryStudio from "./SoundSanctuaryStudio";
 
 const CustomizeSanctuaryModal = () => {
   const {
@@ -30,6 +33,7 @@ const CustomizeSanctuaryModal = () => {
 
   const { user } = useAuthStore();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [presetBackup, setPresetBackup] = useState(null);
 
   const handleClose = () => {
     setShowConfirmDialog(false);
@@ -42,6 +46,7 @@ const CustomizeSanctuaryModal = () => {
     { id: "companion", name: "Companion", emoji: "🐦" },
     { id: "music", name: "Ambience", emoji: "🎵" },
     { id: "decorations", name: "Decorations", emoji: "✨" },
+    { id: "presets", name: "Presets", emoji: "🪄" },
     { id: "profile", name: "Profile", emoji: "👤" },
   ];
 
@@ -192,6 +197,16 @@ const CustomizeSanctuaryModal = () => {
                       updateSettings={updateSettings}
                     />
                   )}
+
+                  {activeTab === "presets" && (
+                    <PresetsTab
+                      key="presets"
+                      settings={settings}
+                      updateSettings={updateSettings}
+                      backup={presetBackup}
+                      setBackup={setPresetBackup}
+                    />
+                  )}
                 </AnimatePresence>
               </div>
             </GlassCard>
@@ -312,6 +327,8 @@ const TreeTab = () => {
     setSelectedTree,
     selectedTree,
     unlockedTrees,
+    treeAura,
+    setTreeAura,
   } = useTree();
 
   return (
@@ -387,6 +404,65 @@ const TreeTab = () => {
             </button>
           );
         })}
+      </div>
+
+      <section aria-labelledby="tree-aura-heading" className="space-y-4">
+        <div>
+          <h4 id="tree-aura-heading" className="text-lg font-bold" style={{ color: "var(--text)" }}>Tree Aura</h4>
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Choose a cosmetic glow. Tree growth and unlocks still come from your real progress.</p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {TREE_AURA_OPTIONS.map((aura) => (
+            <button key={aura.id} type="button" onClick={() => setTreeAura(aura.id)} aria-pressed={treeAura === aura.id}
+              className={`rounded-2xl border-2 p-4 text-left transition-colors ${treeAura === aura.id ? "border-primary-400 bg-primary-400/10" : "border-white/10 bg-white/5 hover:border-primary-300/30"}`}>
+              <span className="block font-bold" style={{ color: "var(--text)" }}>{aura.name}</span>
+              <span className="mt-1 block text-xs" style={{ color: "var(--text-secondary)" }}>{aura.description}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    </motion.div>
+  );
+};
+
+const PRESET_FIELDS = ["theme", "treeAura", "music", "ambientEffects", "reducedMotion", "particleIntensity", "glowIntensity", "backgroundAtmosphere", "cardSpacing"];
+
+const PresetsTab = ({ settings, updateSettings, backup, setBackup }) => {
+  const applyPreset = (preset) => {
+    if (!backup) {
+      const previous = {};
+      for (const field of PRESET_FIELDS) {
+        const value = settings?.[field];
+        previous[field] = Array.isArray(value) ? [...value] : value;
+      }
+      setBackup(previous);
+    }
+    updateSettings(preset.settings);
+  };
+
+  const restorePrevious = () => {
+    if (!backup) return;
+    updateSettings(backup);
+    setBackup(null);
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h3 className="text-xl font-bold" style={{ color: "var(--text)" }}>Sanctuary Presets</h3>
+          <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>Apply a starting atmosphere, then adjust any setting in the other tabs.</p>
+        </div>
+        {backup && <button type="button" onClick={restorePrevious} className="rounded-xl border px-4 py-2 text-sm font-semibold" style={{ color: "var(--text)", borderColor: "var(--border)" }}>Restore previous choices</button>}
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {SANCTUARY_PRESETS.map((preset) => (
+          <button key={preset.id} type="button" onClick={() => applyPreset(preset)} className="companion-card rounded-2xl p-5 text-left" aria-label={`Apply ${preset.name} preset`}>
+            <span className="text-3xl" aria-hidden="true">{preset.emoji}</span>
+            <span className="mt-3 block font-bold" style={{ color: "var(--text)" }}>{preset.name}</span>
+            <span className="mt-1 block text-sm" style={{ color: "var(--text-secondary)" }}>{preset.description}</span>
+          </button>
+        ))}
       </div>
     </motion.div>
   );
@@ -579,7 +655,24 @@ const MusicTab = ({ settings, updateSettings }) => {
       ? currentMusic.filter((item) => item !== id)
       : [...currentMusic, id];
 
-    updateSettings({ music: newAmbience });
+    const updates = { music: newAmbience };
+    const currentLayers = Array.isArray(settings?.audioLayers) ? settings.audioLayers : [];
+    const audioTrackByAmbience = {
+      rain: "rain", "rain-sounds": "rain",
+      wind: "wind", "wind-sounds": "wind",
+      birds: "birds", "bird-sounds": "birds",
+      "nature-sounds": "nature",
+    };
+    const audioTrack = audioTrackByAmbience[id];
+    if (audioTrack) {
+      const isActive = currentLayers.some((layer) => layer.soundId === audioTrack);
+      const audioLayers = isActive
+        ? currentLayers.filter((layer) => layer.soundId !== audioTrack)
+        : [...currentLayers, { soundId: audioTrack, volume: 0.25, muted: false }];
+      updates.audioLayers = audioLayers;
+      updates.audioTrack = audioLayers[0]?.soundId || "none";
+    }
+    updateSettings(updates);
   };
 
   return (
@@ -594,6 +687,36 @@ const MusicTab = ({ settings, updateSettings }) => {
       >
         Choose Ambience
       </h3>
+
+      <SoundSanctuaryStudio />
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--glass)" }}>
+          <input type="checkbox" checked={settings?.ambientEffects === true} onChange={(event) => updateSettings({ ambientEffects: event.target.checked })} className="mt-1 accent-violet-400" />
+          <span><span className="block font-semibold" style={{ color: "var(--text)" }}>Ambient visual effects</span><span className="text-xs" style={{ color: "var(--text-secondary)" }}>Show selected fireflies, stars, rain, mist, and tree aura effects.</span></span>
+        </label>
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--glass)" }}>
+          <input type="checkbox" checked={settings?.reducedMotion === true} onChange={(event) => updateSettings({ reducedMotion: event.target.checked })} className="mt-1 accent-violet-400" />
+          <span><span className="block font-semibold" style={{ color: "var(--text)" }}>Reduce motion</span><span className="text-xs" style={{ color: "var(--text-secondary)" }}>Reduce animated movement throughout the app.</span></span>
+        </label>
+      </div>
+
+      <section className="grid gap-4 rounded-2xl border p-4 sm:grid-cols-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--glass)" }} aria-label="Appearance controls">
+        <label className="space-y-1.5 text-sm font-medium" style={{ color: "var(--text)" }}>Ambient particle intensity
+          <select value={settings?.particleIntensity || "medium"} onChange={(event) => updateSettings({ particleIntensity: event.target.value })} className="glass-input w-full rounded-xl px-3 py-2.5"><option value="off">Off</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select>
+        </label>
+        <label className="space-y-1.5 text-sm font-medium" style={{ color: "var(--text)" }}>Glow intensity
+          <select value={settings?.glowIntensity || "balanced"} onChange={(event) => updateSettings({ glowIntensity: event.target.value })} className="glass-input w-full rounded-xl px-3 py-2.5"><option value="subtle">Subtle</option><option value="balanced">Balanced</option><option value="magical">Magical</option></select>
+        </label>
+        <label className="space-y-1.5 text-sm font-medium" style={{ color: "var(--text)" }}>Background atmosphere
+          <select value={settings?.backgroundAtmosphere || "clear"} onChange={(event) => updateSettings({ backgroundAtmosphere: event.target.value })} className="glass-input w-full rounded-xl px-3 py-2.5"><option value="clear">Clear</option><option value="misty">Misty</option><option value="starry">Starry</option><option value="rainy">Rainy</option></select>
+        </label>
+        <label className="space-y-1.5 text-sm font-medium" style={{ color: "var(--text)" }}>Card spacing
+          <select value={settings?.cardSpacing || "comfortable"} onChange={(event) => updateSettings({ cardSpacing: event.target.value })} className="glass-input w-full rounded-xl px-3 py-2.5"><option value="compact">Compact</option><option value="comfortable">Comfortable</option></select>
+        </label>
+      </section>
+
+      <h4 className="font-semibold" style={{ color: "var(--text)" }}>Visual ambience effects</h4>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {MUSIC_OPTIONS.map((music) => {

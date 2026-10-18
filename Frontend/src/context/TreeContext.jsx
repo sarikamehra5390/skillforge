@@ -133,7 +133,13 @@ export const TreeProvider = ({
     <TreeContext.Provider
       value={{
         selectedTree,
+        treeAura: settings?.treeAura || "none",
         setSelectedTree: selectTree,
+        setTreeAura: (treeAura) => {
+          if (["none", "soft-glow", "magical-glow", "celestial-glow"].includes(treeAura)) {
+            updateSettings({ treeAura });
+          }
+        },
         unlockedTrees,
         TREE_OPTIONS,
         userLevel,

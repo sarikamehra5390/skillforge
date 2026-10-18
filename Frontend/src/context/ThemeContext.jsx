@@ -286,6 +286,29 @@ const THEMES = {
       "--card-glow": "rgba(255, 196, 119, 0.14)",
     },
   },
+
+  "aurora-sanctuary": {
+    id: "aurora-sanctuary",
+    name: "Aurora Sanctuary",
+    css: {
+      "--background": "linear-gradient(135deg, #0b1425 0%, #132139 54%, #17152f 100%)",
+      "--surface": "rgba(18, 31, 52, 0.9)",
+      "--card": "rgba(25, 43, 66, 0.82)",
+      "--navbar": "rgba(10, 20, 37, 0.75)",
+      "--sidebar": "rgba(10, 20, 37, 0.7)",
+      "--text": "#e7f7f2",
+      "--text-secondary": "#b9d2d1",
+      "--accent": "#62d9c1",
+      "--accent-light": "rgba(98, 217, 193, 0.15)",
+      "--button": "linear-gradient(135deg, #35b7a5 0%, #8b78e6 100%)",
+      "--button-hover": "linear-gradient(135deg, #56d6bd 0%, #a48ded 100%)",
+      "--border": "rgba(98, 217, 193, 0.22)",
+      "--shadow": "rgba(76, 220, 184, 0.2)",
+      "--glass": "rgba(25, 43, 66, 0.72)",
+      "--glass-border": "rgba(98, 217, 193, 0.25)",
+      "--card-glow": "rgba(67, 221, 181, 0.12)",
+    },
+  },
 };
 
 export const ThemeProvider = ({
@@ -327,8 +350,14 @@ export const ThemeProvider = ({
       }
     );
     document.documentElement.dataset.theme = currentTheme;
+    document.documentElement.dataset.reducedMotion = settings?.reducedMotion ? "true" : "false";
+    document.documentElement.dataset.glowIntensity = settings?.glowIntensity || "balanced";
+    document.documentElement.dataset.cardSpacing = settings?.cardSpacing || "comfortable";
   }, [
     currentTheme,
+    settings?.reducedMotion,
+    settings?.glowIntensity,
+    settings?.cardSpacing,
   ]);
 
   const changeTheme = (themeId) => {

@@ -20,12 +20,19 @@ import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import { ThemeProvider } from "./context/ThemeContext";
 import { TreeProvider } from "./context/TreeContext";
+import { MotionConfig } from "framer-motion";
+import useSanctuaryStore from "./store/useSanctuaryStore";
+import { AmbienceAudioProvider } from "./context/AmbienceAudioContext";
 
 function App() {
+  const reducedMotion = useSanctuaryStore((state) => state.settings?.reducedMotion);
+
   return (
     <BrowserRouter>
       <ThemeProvider>
         <TreeProvider>
+          <AmbienceAudioProvider>
+          <MotionConfig reducedMotion={reducedMotion ? "always" : "user"}>
           <Toaster
             position="top-right"
             theme="dark"
@@ -158,6 +165,8 @@ function App() {
               element={<NotFound />}
             />
           </Routes>
+          </MotionConfig>
+          </AmbienceAudioProvider>
         </TreeProvider>
       </ThemeProvider>
     </BrowserRouter>

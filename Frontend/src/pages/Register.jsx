@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { UserPlus } from "lucide-react";
+import { Eye, EyeOff, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import useAuthStore from "../store/useAuthStore";
@@ -10,6 +11,7 @@ import useAuthStore from "../store/useAuthStore";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
 import BrandMark from "../components/BrandMark";
+import LoginSanctuaryIllustration from "../components/LoginSanctuaryIllustration";
 
 const registerSchema = z
   .object({
@@ -44,6 +46,8 @@ const registerSchema = z
   );
 
 const Register = () => {
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmVisible, setConfirmVisible] = useState(false);
   const navigate = useNavigate();
 
   const registerUser = useAuthStore(
@@ -124,14 +128,14 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-forge-950 flex flex-col md:flex-row overflow-hidden ambient-bg">
+    <div className="min-h-screen bg-forge-950 flex flex-col md:flex-row overflow-x-hidden ambient-bg">
       {/* Left Side: Auth Form */}
-      <div className="w-full md:w-[45%] lg:w-[40%] flex flex-col justify-center p-8 md:p-16 lg:p-24 relative z-10 bg-forge-950/50 backdrop-blur-sm border-r border-white/5">
+      <div className="order-2 w-full md:order-1 md:w-[45%] lg:w-[42%] flex flex-col justify-center px-5 py-8 sm:px-8 md:p-12 lg:p-16 relative z-10 bg-forge-950/50 backdrop-blur-sm border-r border-white/5">
         <div className="max-w-md w-full mx-auto">
           {/* Logo */}
           <Link
             to="/"
-            className="flex items-center gap-3 mb-12 group"
+            className="flex items-center gap-3 mb-8 md:mb-10 group"
           >
             <BrandMark className="group-hover:rotate-6 transition-transform duration-500" />
 
@@ -178,22 +182,24 @@ const Register = () => {
 
             <Input
               label="Secret Password"
-              type="password"
+              type={passwordVisible ? "text" : "password"}
               placeholder="••••••••"
               {...register("password")}
               error={errors.password?.message}
               autoComplete="new-password"
               className="bg-white/5 border-white/10 focus:border-primary-500/50"
+              endAdornment={<button type="button" onClick={() => setPasswordVisible((visible) => !visible)} aria-label={passwordVisible ? "Hide password" : "Show password"} aria-pressed={passwordVisible} className="rounded-md p-1 text-violet-200/80 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-300">{passwordVisible ? <EyeOff size={18} /> : <Eye size={18} />}</button>}
             />
 
             <Input
               label="Confirm Secret"
-              type="password"
+              type={confirmVisible ? "text" : "password"}
               placeholder="••••••••"
               {...register("confirmPassword")}
               error={errors.confirmPassword?.message}
               autoComplete="new-password"
               className="bg-white/5 border-white/10 focus:border-primary-500/50"
+              endAdornment={<button type="button" onClick={() => setConfirmVisible((visible) => !visible)} aria-label={confirmVisible ? "Hide confirmation password" : "Show confirmation password"} aria-pressed={confirmVisible} className="rounded-md p-1 text-violet-200/80 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-300">{confirmVisible ? <EyeOff size={18} /> : <Eye size={18} />}</button>}
             />
 
             <Button
@@ -234,7 +240,7 @@ const Register = () => {
       </div>
 
       {/* Right Side: Visuals & Quote */}
-      <div className="hidden md:flex flex-1 relative flex-col items-center justify-center p-12 overflow-hidden bg-forge-900/20">
+      <div className="login-sanctuary-panel order-1 flex min-h-[250px] sm:min-h-[300px] md:order-2 md:min-h-screen md:flex-1 relative flex-col items-center justify-center px-5 py-6 md:p-12 overflow-hidden">
         {/* Animated Background Elements */}
         <div
           className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary-500/5 rounded-full blur-[120px] animate-glow-pulse"
@@ -249,26 +255,12 @@ const Register = () => {
           aria-hidden="true"
         />
 
-        {/* Study Sanctuary Illustration */}
         <div className="relative z-10 w-full max-w-2xl flex flex-col items-center">
-          <div className="relative w-full max-w-[640px] overflow-hidden rounded-3xl shadow-2xl">
-            <img src="/brand/skillforge-logo.png" alt="SkillForge — Empower your craft" className="block h-auto w-full" />
-          </div>
-
-          <div className="mt-12 text-center max-w-lg">
-            <h3 className="text-3xl font-bold text-white italic mb-4">
-              Your sanctuary awaits.
-            </h3>
-
-            <p className="text-slate-400 font-medium leading-relaxed">
-              Create your account and start building
-              your sanctuary of growth and mastery.
-            </p>
-          </div>
+          <LoginSanctuaryIllustration />
         </div>
 
         {/* Branding Footer */}
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-6 opacity-30">
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 hidden md:flex items-center gap-6 opacity-35">
           <div
             className="h-[1px] w-12 bg-white/20"
             aria-hidden="true"

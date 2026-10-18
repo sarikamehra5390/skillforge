@@ -5,6 +5,7 @@ import { COMPANION_OPTIONS } from "../utils/sanctuary";
 
 const Companion = () => {
   const { settings } = useSanctuaryStore();
+  const reducedMotion = settings?.reducedMotion === true;
 
   const [isBlinking, setIsBlinking] = useState(false);
   const [position, setPosition] = useState(-10);
@@ -16,6 +17,10 @@ const Companion = () => {
 
   // Blink animation
   useEffect(() => {
+    if (reducedMotion) {
+      return undefined;
+    }
+
     let blinkTimer;
     let blinkEndTimer;
 
@@ -38,10 +43,14 @@ const Companion = () => {
       clearTimeout(blinkTimer);
       clearTimeout(blinkEndTimer);
     };
-  }, []);
+  }, [reducedMotion]);
 
   // Walking animation
   useEffect(() => {
+    if (reducedMotion) {
+      return undefined;
+    }
+
     const walkInterval = setInterval(() => {
       setPosition((prevX) => {
         let newX = prevX + direction * 5;
@@ -59,7 +68,7 @@ const Companion = () => {
     }, 100);
 
     return () => clearInterval(walkInterval);
-  }, [direction]);
+  }, [direction, reducedMotion]);
 
   if (!companionData) {
     return null;
@@ -69,10 +78,10 @@ const Companion = () => {
     <motion.div
       className="fixed bottom-10 left-1/2 z-40 -translate-x-1/2 text-6xl"
       style={{ x: position }}
-      animate={{
+      animate={reducedMotion ? { y: 0, rotate: 0, scale: 1 } : {
         y: [0, -5, 0],
         rotate: [0, 2, 0, -2, 0],
-        scale: isBlinking ? 0.95 : 1,
+        scale: !reducedMotion && isBlinking ? 0.95 : 1,
       }}
       transition={{
         y: {

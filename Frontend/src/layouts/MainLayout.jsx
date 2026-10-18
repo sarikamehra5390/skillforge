@@ -14,12 +14,12 @@ import useSanctuaryStore from "../store/useSanctuaryStore";
 
 const fireflies = Array.from({ length: 12 }, (_, index) => ({
   id: index,
-  duration: `${10 + Math.random() * 15}s`,
-  x: `${(Math.random() - 0.5) * 600}px`,
-  y: `${(Math.random() - 0.5) * 600}px`,
-  top: `${Math.random() * 100}%`,
-  left: `${Math.random() * 100}%`,
-  animationDelay: `${Math.random() * 10}s`,
+  duration: `${10 + (index * 7) % 15}s`,
+  x: `${((index * 97) % 600) - 300}px`,
+  y: `${((index * 53) % 600) - 300}px`,
+  top: `${(index * 37 + 11) % 100}%`,
+  left: `${(index * 61 + 7) % 100}%`,
+  animationDelay: `${(index * 13) % 10}s`,
 }));
 
 function MainLayout({ children }) {
@@ -62,6 +62,8 @@ function MainLayout({ children }) {
   )
     ? settings.music
     : [];
+  const ambientEffects = settings?.ambientEffects === true;
+  const reducedMotion = settings?.reducedMotion === true;
 
   // Initialize user-specific data.
   useEffect(() => {
@@ -127,31 +129,27 @@ function MainLayout({ children }) {
 
         <div
           className="animate-glow-pulse absolute bottom-[-10%] right-[-10%] h-[40%] w-[40%] rounded-full bg-secondary-500/10 blur-[120px]"
-          style={{
-            animationDelay: "5s",
-          }}
+          style={{ animationDelay: "5s", animation: reducedMotion ? "none" : undefined }}
         />
 
         {/* Fireflies */}
-        {activeAmbience.includes(
-          "fireflies"
-        ) &&
-          fireflies.map((firefly) => (
-            <div
-              key={firefly.id}
-              className="firefly"
-              style={{
-                "--duration":
-                  firefly.duration,
-                "--x": firefly.x,
-                "--y": firefly.y,
-                top: firefly.top,
-                left: firefly.left,
-                animationDelay:
-                  firefly.animationDelay,
-              }}
-              aria-hidden="true"
-            />
+        {ambientEffects && activeAmbience.includes("fireflies") &&
+          fireflies.slice(0, Math.round(fireflies.length * ({ off: 0, low: 0.25, medium: 0.6, high: 1 }[settings?.particleIntensity] ?? 0.6))).map((firefly) => (
+                <div
+                  key={firefly.id}
+                  className="firefly"
+                  style={{
+                    "--duration": firefly.duration,
+                    "--x": firefly.x,
+                    "--y": firefly.y,
+                    top: firefly.top,
+                    left: firefly.left,
+                    animationDelay: firefly.animationDelay,
+                    animation: reducedMotion ? "none" : undefined,
+                    opacity: reducedMotion ? 0.65 : undefined,
+                  }}
+                  aria-hidden="true"
+                />
           ))}
       </div>
 

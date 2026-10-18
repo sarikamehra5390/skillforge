@@ -94,6 +94,65 @@ export const THEME_OPTIONS = [
     description: "A warm plum sky with peach and amber glow",
     preview: "linear-gradient(135deg, #281A36, #49305F 60%, #FFC477)",
   },
+  {
+    id: "aurora-sanctuary",
+    name: "Aurora Sanctuary",
+    emoji: "🌌",
+    description: "A deep night sky with a gentle teal and violet aurora",
+    preview: "linear-gradient(135deg, #0b1425, #133b46 55%, #7657a8)",
+  },
+];
+
+export const TREE_AURA_OPTIONS = [
+  { id: "none", name: "None", description: "Keep the tree in its natural light" },
+  { id: "soft-glow", name: "Soft Glow", description: "A calm halo around the canopy" },
+  { id: "magical-glow", name: "Magical Glow", description: "A brighter enchanted shimmer" },
+  { id: "celestial-glow", name: "Celestial Glow", description: "Moonlit color with gentle stars" },
+];
+
+export const SANCTUARY_PRESETS = [
+  {
+    id: "aurora-night",
+    name: "Aurora Night",
+    emoji: "🌌",
+    description: "A quiet aurora sky with soft celestial light.",
+    settings: { theme: "aurora-sanctuary", treeAura: "celestial-glow", music: ["stars", "fireflies"], ambientEffects: true, reducedMotion: false, particleIntensity: "low", glowIntensity: "balanced", backgroundAtmosphere: "starry", cardSpacing: "comfortable" },
+  },
+  {
+    id: "cozy-evening",
+    name: "Cozy Evening",
+    emoji: "🌇",
+    description: "Warm evening light with fireflies.",
+    settings: { theme: "evening-sanctuary", treeAura: "soft-glow", music: ["fireflies"], ambientEffects: true, reducedMotion: false, particleIntensity: "medium", glowIntensity: "balanced", backgroundAtmosphere: "misty", cardSpacing: "comfortable" },
+  },
+  {
+    id: "moonlit-dreams",
+    name: "Moonlit Dreams",
+    emoji: "🌙",
+    description: "A night sky, soft tree light, and stars.",
+    settings: { theme: "night-sanctuary", treeAura: "soft-glow", music: ["stars", "fireflies"], ambientEffects: true, reducedMotion: false, particleIntensity: "low", glowIntensity: "subtle", backgroundAtmosphere: "starry", cardSpacing: "comfortable" },
+  },
+  {
+    id: "deep-focus",
+    name: "Deep Focus",
+    emoji: "🧘",
+    description: "A quieter space with motion reduced.",
+    settings: { treeAura: "none", ambientEffects: false, reducedMotion: true, particleIntensity: "off", glowIntensity: "subtle", backgroundAtmosphere: "clear", cardSpacing: "compact" },
+  },
+  {
+    id: "enchanted-forest",
+    name: "Enchanted Forest",
+    emoji: "🌲",
+    description: "Moonlit forest colors and a magical aura.",
+    settings: { theme: "moonlit-forest", treeAura: "magical-glow", music: ["fireflies", "leaves"], ambientEffects: true, reducedMotion: false, particleIntensity: "high", glowIntensity: "magical", backgroundAtmosphere: "misty", cardSpacing: "comfortable" },
+  },
+];
+
+export const AMBIENT_AUDIO_OPTIONS = [
+  { id: "rain", name: "Rain", emoji: "🌧️" },
+  { id: "wind", name: "Wind in the trees", emoji: "🍃" },
+  { id: "birds", name: "Forest birds", emoji: "🐦" },
+  { id: "nature", name: "Rain and forest", emoji: "🌲" },
 ];
 
 export const COMPANION_OPTIONS = [
@@ -400,5 +459,12 @@ export const THEME_STYLES = {
     accent: "text-[#D9A0B8]",
     cardBg: "bg-[#49305F]/80",
     border: "border-[#D9A0B8]/25",
+  },
+
+  "aurora-sanctuary": {
+    background: "bg-gradient-to-br from-[#0b1425] via-[#132139] to-[#17152f]",
+    accent: "text-[#62d9c1]",
+    cardBg: "bg-[#192b42]/80",
+    border: "border-[#62d9c1]/25",
   },
 };

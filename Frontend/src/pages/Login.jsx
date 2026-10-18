@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useForm } from "react-hook-form";
@@ -6,7 +7,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 import {
+  Eye,
+  EyeOff,
+  KeyRound,
   LogIn,
+  Mail,
+  Sparkles,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -33,6 +39,7 @@ const loginSchema = z.object({
 });
 
 const Login = () => {
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const navigate = useNavigate();
 
   const [searchParams] = useSearchParams();
@@ -109,7 +116,7 @@ const Login = () => {
 
   return (
     <div
-      className="min-h-screen flex flex-col md:flex-row overflow-hidden"
+      className="min-h-screen flex flex-col md:flex-row overflow-x-hidden"
       style={{
         backgroundColor: "var(--surface)",
       }}
@@ -119,7 +126,7 @@ const Login = () => {
       ===================================================== */}
 
       <div
-        className="w-full md:w-[45%] lg:w-[40%] flex flex-col justify-center p-8 md:p-16 lg:p-24 relative z-10 backdrop-blur-sm border-r"
+        className="order-2 w-full md:order-1 md:w-[45%] lg:w-[42%] flex flex-col justify-center px-5 py-8 sm:px-8 md:p-12 lg:p-16 relative z-10 backdrop-blur-sm border-r"
         style={{
           backgroundColor: "rgba(0,0,0,0.1)",
           borderColor: "var(--border)",
@@ -129,7 +136,7 @@ const Login = () => {
           {/* Logo */}
           <Link
             to="/"
-            className="flex items-center gap-3 mb-16 group"
+            className="flex items-center gap-3 mb-8 md:mb-12 group"
           >
             <BrandMark className="group-hover:rotate-6 transition-transform duration-500" />
 
@@ -144,7 +151,10 @@ const Login = () => {
           </Link>
 
           {/* Heading */}
-          <div className="mb-10">
+          <div className="mb-8">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-300/20 bg-violet-400/10 px-3 py-1.5 text-xs font-semibold text-violet-200">
+              <Sparkles size={14} aria-hidden="true" /> Welcome to your sanctuary
+            </div>
             <h1
               className="text-4xl font-bold mb-3 tracking-tight"
               style={{
@@ -172,6 +182,7 @@ const Login = () => {
           >
             <Input
               label="Email Address"
+              icon={Mail}
               type="email"
               placeholder="name@example.com"
               autoComplete="email"
@@ -181,16 +192,28 @@ const Login = () => {
 
             <Input
               label="Password"
-              type="password"
+              icon={KeyRound}
+              type={passwordVisible ? "text" : "password"}
               placeholder="••••••••"
               autoComplete="current-password"
               {...register("password")}
               error={errors.password?.message}
+              endAdornment={(
+                <button
+                  type="button"
+                  onClick={() => setPasswordVisible((visible) => !visible)}
+                  aria-label={passwordVisible ? "Hide password" : "Show password"}
+                  aria-pressed={passwordVisible}
+                  className="rounded-md p-1 text-violet-200/80 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-300"
+                >
+                  {passwordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              )}
             />
 
             <Button
               type="submit"
-              className="w-full py-4 rounded-2xl text-base"
+              className="w-full py-4 rounded-2xl text-base shadow-lg shadow-fuchsia-500/20"
               disabled={loading}
             >
               {loading ? (
@@ -217,7 +240,7 @@ const Login = () => {
           </form>
 
           {/* Register Link */}
-          <div className="mt-12 text-center">
+          <div className="mt-8 text-center">
             <p
               className="font-medium"
               style={{
@@ -243,49 +266,20 @@ const Login = () => {
           Right Side: Visuals & Quote
       ===================================================== */}
 
-      <div className="login-sanctuary-panel hidden md:flex flex-1 relative flex-col items-center justify-center p-8 lg:p-12 overflow-hidden">
+      <div className="login-sanctuary-panel order-1 flex min-h-[250px] sm:min-h-[300px] md:order-2 md:min-h-screen md:flex-1 relative flex-col items-center justify-center px-5 py-6 md:p-8 lg:p-12 overflow-hidden">
         <div className="login-sanctuary-atmosphere" aria-hidden="true">
-          <div className="login-sanctuary-halo" />
           <div className="login-sanctuary-teal-glow" />
-          <div className="login-sanctuary-orbit" />
           <div className="login-fireflies">
-            <span style={{ left: "12%", top: "24%", animationDelay: "-2s" }} />
-            <span style={{ left: "79%", top: "19%", animationDelay: "-7s" }} />
-            <span style={{ left: "86%", top: "51%", animationDelay: "-4s" }} />
-            <span style={{ left: "18%", top: "70%", animationDelay: "-9s" }} />
-            <span style={{ left: "70%", top: "78%", animationDelay: "-1s" }} />
-            <span style={{ left: "44%", top: "14%", animationDelay: "-5s" }} />
-            <span style={{ left: "91%", top: "83%", animationDelay: "-3s" }} />
+            {Array.from({ length: 7 }, (_, index) => <span key={index} style={{ left: `${12 + index * 12}%`, top: `${19 + ((index * 23) % 65)}%`, animationDelay: `${-index * 1.7}s` }} />)}
           </div>
         </div>
 
-        {/* Twilight sanctuary illustration */}
         <div className="relative z-10 w-full max-w-2xl flex flex-col items-center">
           <LoginSanctuaryIllustration />
-
-          <div className="mt-9 lg:mt-11 text-center max-w-lg">
-            <h3
-              className="text-3xl lg:text-4xl font-bold italic mb-4 drop-shadow-[0_0_24px_rgba(196,181,253,0.32)]"
-              style={{
-                color: "var(--text)",
-              }}
-            >
-              Your sanctuary awaits.
-            </h3>
-
-            <p
-              className="font-medium leading-relaxed"
-              style={{
-                color: "var(--text-secondary)",
-              }}
-            >
-              Small steps today. A stronger you tomorrow.
-            </p>
-          </div>
         </div>
 
         {/* Branding Footer */}
-        <div className="absolute bottom-7 lg:bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-6 opacity-45 pointer-events-none">
+        <div className="absolute bottom-4 md:bottom-7 lg:bottom-12 left-1/2 -translate-x-1/2 hidden md:flex items-center gap-6 opacity-45 pointer-events-none">
           <div
             className="h-[1px] w-12"
             style={{
