@@ -216,6 +216,10 @@ const useDashboardStore = create((set, get) => ({
         );
       }
 
+      if (data.longestStreak !== undefined) {
+        authUpdates.longestStreak = getNumericValue(data.longestStreak, currentUser?.longestStreak ?? 0);
+      }
+
       if (
         currentUser &&
         Object.keys(authUpdates).length > 0
@@ -281,6 +285,9 @@ const useDashboardStore = create((set, get) => ({
           currentUser?.level ?? 1
         );
       }
+
+      if (data.streak !== undefined) authUpdates.streak = getNumericValue(data.streak, currentUser?.streak ?? 0);
+      if (data.longestStreak !== undefined) authUpdates.longestStreak = getNumericValue(data.longestStreak, currentUser?.longestStreak ?? 0);
 
       if (
         currentUser &&
@@ -350,6 +357,8 @@ const useDashboardStore = create((set, get) => ({
           currentUser?.level ?? 1
         );
       }
+      if (data.streak !== undefined) authUpdates.streak = getNumericValue(data.streak, currentUser?.streak ?? 0);
+      if (data.longestStreak !== undefined) authUpdates.longestStreak = getNumericValue(data.longestStreak, currentUser?.longestStreak ?? 0);
 
       if (
         currentUser &&
@@ -463,9 +472,21 @@ const useDashboardStore = create((set, get) => ({
         `/skills/${id}`
       );
 
+      const currentUser = useAuthStore.getState().user;
+      const data = response.data || {};
+      const authUpdates = {};
+      for (const key of ['xp', 'level', 'streak', 'longestStreak']) {
+        if (data[key] !== undefined) {
+          authUpdates[key] = getNumericValue(data[key], currentUser?.[key] ?? 0);
+        }
+      }
+      if (currentUser && Object.keys(authUpdates).length > 0) {
+        useAuthStore.getState().updateUser(authUpdates);
+      }
+
       await get().fetchDashboardData();
 
-      return response.data;
+      return data;
     } catch (error) {
       const message = getErrorMessage(
         error,

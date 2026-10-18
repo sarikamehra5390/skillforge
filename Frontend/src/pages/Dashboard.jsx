@@ -29,7 +29,7 @@ import LivingTree from "../components/LivingTree";
 
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "../utils/cn";
-import { calculateXPProgress } from "../utils/gamification";
+import { calculateXPProgress, getUtcDayKey } from "../utils/gamification";
 
 const Dashboard = () => {
   const user = useAuthStore((state) => state.user);
@@ -199,7 +199,7 @@ const Dashboard = () => {
   // Today's Progress
   // ---------------------------------------------------------
 
-  const today = new Date().toDateString();
+  const today = getUtcDayKey();
 
   const sessionsToday = safeSessions.filter(
     (session) => {
@@ -211,21 +211,18 @@ const Dashboard = () => {
         return false;
       }
 
-      return date.toDateString() === today;
+      return getUtcDayKey(date) === today;
     }
   );
 
   const hasSessionToday = sessionsToday.length > 0;
 
   const lastCheckIn = user?.lastCheckIn
-    ? new Date(user.lastCheckIn)
+      ? getUtcDayKey(user.lastCheckIn)
     : null;
 
   const lastCheckInDate =
-    lastCheckIn &&
-    !Number.isNaN(lastCheckIn.getTime())
-      ? lastCheckIn.toDateString()
-      : null;
+    Number.isFinite(lastCheckIn) ? lastCheckIn : null;
 
   const checkedInMoodToday =
     checkedInToday ||

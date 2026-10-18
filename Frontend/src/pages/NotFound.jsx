@@ -51,7 +51,7 @@ const NotFound = () => {
           </Link>
 
           <Link
-            to="/search"
+            to="/friends"
             className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all"
           >
             <Search

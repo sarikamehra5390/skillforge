@@ -19,6 +19,8 @@ const sanctuarySettingsSchema = new mongoose.Schema(
         "ghibli-sky",
         "rainy-evening",
         "starry-meadow",
+        "night-sanctuary",
+        "evening-sanctuary",
       ],
       default: "classic",
     },

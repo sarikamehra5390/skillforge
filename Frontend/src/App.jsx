@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 
 import Dashboard from "./pages/Dashboard";
@@ -10,7 +10,6 @@ import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Friends from "./pages/Friends";
-import Search from "./pages/Search";
 import FriendProfile from "./pages/FriendProfile";
 import CommunityGarden from "./pages/CommunityGarden";
 import ManageAccount from "./pages/ManageAccount";
@@ -113,11 +112,7 @@ function App() {
 
               <Route
                 path="/search"
-                element={
-                  <MainLayout>
-                    <Search />
-                  </MainLayout>
-                }
+                element={<Navigate to="/friends" replace />}
               />
 
               <Route

@@ -240,6 +240,52 @@ const THEMES = {
         "rgba(168, 85, 247, 0.3)",
     },
   },
+
+  "night-sanctuary": {
+    id: "night-sanctuary",
+    name: "Night Sanctuary",
+    css: {
+      "--background": "linear-gradient(135deg, #101426 0%, #191832 52%, #292047 100%)",
+      "--surface": "rgba(25, 24, 50, 0.9)",
+      "--card": "rgba(41, 32, 71, 0.82)",
+      "--navbar": "rgba(16, 20, 38, 0.72)",
+      "--sidebar": "rgba(16, 20, 38, 0.68)",
+      "--text": "#E7E7FF",
+      "--text-secondary": "#c2c0df",
+      "--accent": "#B8A7FF",
+      "--accent-light": "rgba(184, 167, 255, 0.15)",
+      "--button": "linear-gradient(135deg, #8f80dc 0%, #b08cdb 100%)",
+      "--button-hover": "linear-gradient(135deg, #a99afa 0%, #c59ce9 100%)",
+      "--border": "rgba(184, 167, 255, 0.24)",
+      "--shadow": "rgba(115, 224, 208, 0.16)",
+      "--glass": "rgba(35, 33, 68, 0.72)",
+      "--glass-border": "rgba(184, 167, 255, 0.26)",
+      "--card-glow": "rgba(115, 224, 208, 0.13)",
+    },
+  },
+
+  "evening-sanctuary": {
+    id: "evening-sanctuary",
+    name: "Evening Sanctuary",
+    css: {
+      "--background": "linear-gradient(135deg, #281A36 0%, #49305F 56%, #392541 100%)",
+      "--surface": "rgba(52, 34, 67, 0.9)",
+      "--card": "rgba(73, 48, 95, 0.82)",
+      "--navbar": "rgba(40, 26, 54, 0.72)",
+      "--sidebar": "rgba(40, 26, 54, 0.68)",
+      "--text": "#FFF0E7",
+      "--text-secondary": "#e0cbd5",
+      "--accent": "#D9A0B8",
+      "--accent-light": "rgba(217, 160, 184, 0.16)",
+      "--button": "linear-gradient(135deg, #c88eab 0%, #d9a0b8 50%, #e6ad79 100%)",
+      "--button-hover": "linear-gradient(135deg, #d9a0b8 0%, #edb5c5 55%, #ffc477 100%)",
+      "--border": "rgba(217, 160, 184, 0.25)",
+      "--shadow": "rgba(255, 196, 119, 0.16)",
+      "--glass": "rgba(73, 48, 95, 0.72)",
+      "--glass-border": "rgba(217, 160, 184, 0.28)",
+      "--card-glow": "rgba(255, 196, 119, 0.14)",
+    },
+  },
 };
 
 export const ThemeProvider = ({
@@ -280,6 +326,7 @@ export const ThemeProvider = ({
         );
       }
     );
+    document.documentElement.dataset.theme = currentTheme;
   }, [
     currentTheme,
   ]);

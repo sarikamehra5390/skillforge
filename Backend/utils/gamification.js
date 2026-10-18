@@ -189,82 +189,73 @@ const getTreeStage = (xp) => {
    CURRENT STREAK
 ========================================================= */
 
-const calculateCurrentStreak = (sessions) => {
-  if (!Array.isArray(sessions) || sessions.length === 0) {
-    return 0;
-  }
-
-  const validSessions = sessions.filter((session) => {
-    if (!session?.completedAt) {
-      return false;
-    }
-
-    const date = new Date(session.completedAt);
-
-    return !Number.isNaN(date.getTime());
-  });
-
-  if (validSessions.length === 0) {
-    return 0;
-  }
-
-  const dates = new Set();
-
-  validSessions.forEach((session) => {
-    const date = new Date(session.completedAt);
-
-    dates.add(date.toDateString());
-  });
-
-  const sortedDates = Array.from(dates).sort(
-    (a, b) => new Date(b) - new Date(a)
-  );
-
-  if (sortedDates.length === 0) {
-    return 0;
-  }
-
-  const today = new Date().toDateString();
-
-  const yesterday = new Date(
-    Date.now() - 24 * 60 * 60 * 1000
-  ).toDateString();
-
-  /*
-   * A streak is active only when the user practiced
-   * today or yesterday.
-   */
-  if (
-    sortedDates[0] !== today &&
-    sortedDates[0] !== yesterday
-  ) {
-    return 0;
-  }
-
-  let streak = 1;
-  let currentDate = new Date(sortedDates[0]);
-
-  for (let i = 1; i < sortedDates.length; i++) {
-    const previousDate = new Date(sortedDates[i]);
-
-    const diffTime =
-      currentDate.getTime() -
-      previousDate.getTime();
-
-    const diffDays = Math.floor(
-      diffTime / (1000 * 60 * 60 * 24)
-    );
-
-    if (diffDays === 1) {
-      streak++;
-      currentDate = previousDate;
-    } else {
-      break;
-    }
-  }
-
-  return streak;
+// SkillForge currently has no per-user timezone setting. UTC is the shared
+// calendar-day boundary for streaks on the server and in client summaries.
+const getPracticeDay = (session) => {
+  if (!session?.completedAt) return null;
+  const date = new Date(session.completedAt);
+  if (Number.isNaN(date.getTime())) return null;
+  return Math.floor(Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate()
+  ) / 86400000);
 };
+
+const getPracticeRecords = (sessions, now = new Date()) => {
+  const today = getPracticeDay({ completedAt: now });
+  if (today === null) return [];
+  return (Array.isArray(sessions) ? sessions : [])
+    .map((session) => ({ session, day: getPracticeDay(session) }))
+    .filter(({ session, day }) => (
+      day !== null && day <= today &&
+      Number.isFinite(Number(session?.duration)) && Number(session.duration) > 0
+    ));
+};
+
+const calculateStreakState = (sessions, now = new Date()) => {
+  const records = getPracticeRecords(sessions, now);
+  const byDay = new Map();
+  for (const { session, day } of records) {
+    const completedAt = new Date(session.completedAt);
+    const existing = byDay.get(day);
+    if (!existing || completedAt > existing) byDay.set(day, completedAt);
+  }
+
+  const days = [...byDay.keys()].sort((a, b) => b - a);
+  let current = 0;
+  if (days.length && days[0] >= getPracticeDay({ completedAt: now }) - 1) {
+    current = 1;
+    for (let index = 1; index < days.length && days[index - 1] - days[index] === 1; index++) current++;
+  }
+
+  const chronologicalDays = [...days].reverse();
+  let longest = 0;
+  let run = 0;
+  let previous = null;
+  for (const day of chronologicalDays) {
+    run = previous !== null && day === previous + 1 ? run + 1 : 1;
+    longest = Math.max(longest, run);
+    previous = day;
+  }
+
+  const lastPracticeDate = days.length ? byDay.get(days[0]) : undefined;
+  return { streak: current, longestStreak: longest, lastPracticeDate };
+};
+
+const calculateCurrentStreak = (sessions, now = new Date()) =>
+  calculateStreakState(sessions, now).streak;
+
+const getFreshStreakValue = (streak, lastPracticeDate, now = new Date()) => {
+  const lastPracticeDay = getPracticeDay({ completedAt: lastPracticeDate });
+  const currentDay = getPracticeDay({ completedAt: now });
+  if (lastPracticeDay === null || currentDay === null || lastPracticeDay < currentDay - 1 || lastPracticeDay > currentDay) return 0;
+  const value = Number(streak);
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
+};
+
+const calculateLongestStreak = (sessions, now = new Date()) =>
+  calculateStreakState(sessions, now).longestStreak;
 
 /* =========================================================
    EARNED FRUITS
@@ -321,6 +312,9 @@ module.exports = {
   calculateXPProgress,
   getTreeStage,
   calculateCurrentStreak,
+  calculateStreakState,
+  getFreshStreakValue,
+  calculateLongestStreak,
   getEarnedFruits,
   getCurrentSeason,
 };

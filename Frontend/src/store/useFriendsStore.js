@@ -5,6 +5,18 @@ import { toast } from 'sonner';
 const normalizeArray = (value) =>
   Array.isArray(value) ? value : [];
 
+const dedupeUsers = (value) => {
+  const seen = new Set();
+  return normalizeArray(value).filter((person) => {
+    const id = person?._id;
+    if (id == null) return true;
+    const key = String(id);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 const getErrorMessage = (
   error,
   fallbackMessage
@@ -18,15 +30,20 @@ const useFriendsStore = create((set, get) => ({
   incomingRequests: [],
   outgoingRequests: [],
   searchResults: [],
+  searchLoading: false,
+  searchError: null,
   activityFeed: [],
 
   loading: false,
 
   _fetchFriendsPromise: null,
   _fetchPendingPromise: null,
+  _friendsRequestId: 0,
+  _pendingRequestId: 0,
   _fetchActivityPromise: null,
   _searchUsersPromise: null,
   _searchQuery: '',
+  _searchRequestId: 0,
 
   // =========================
   // Friends
@@ -40,22 +57,21 @@ const useFriendsStore = create((set, get) => ({
       return existing;
     }
 
+    const requestId = get()._friendsRequestId + 1;
     set({
       loading: true,
+      _friendsRequestId: requestId,
     });
 
     const promise = (async () => {
       try {
         const res = await api.get('/friends');
 
-        const friends = normalizeArray(
-          res.data
-        );
+        const friends = dedupeUsers(res.data);
 
-        set({
-          friends,
-          loading: false,
-        });
+        if (get()._friendsRequestId === requestId) {
+          set({ friends, loading: false });
+        }
 
         return friends;
       } catch (error) {
@@ -64,15 +80,11 @@ const useFriendsStore = create((set, get) => ({
           error
         );
 
-        set({
-          loading: false,
-        });
+        if (get()._friendsRequestId === requestId) set({ loading: false });
 
         return [];
       } finally {
-        set({
-          _fetchFriendsPromise: null,
-        });
+        if (get()._friendsRequestId === requestId) set({ _fetchFriendsPromise: null });
       }
     })();
 
@@ -95,26 +107,21 @@ const useFriendsStore = create((set, get) => ({
       return existing;
     }
 
+    const requestId = get()._pendingRequestId + 1;
+    set({ _pendingRequestId: requestId });
     const promise = (async () => {
       try {
         const res = await api.get(
           '/friends/pending'
         );
 
-        const incomingRequests =
-          normalizeArray(
-            res.data?.incoming
-          );
+        const incomingRequests = dedupeUsers(res.data?.incoming);
 
-        const outgoingRequests =
-          normalizeArray(
-            res.data?.outgoing
-          );
+        const outgoingRequests = dedupeUsers(res.data?.outgoing);
 
-        set({
-          incomingRequests,
-          outgoingRequests,
-        });
+        if (get()._pendingRequestId === requestId) {
+          set({ incomingRequests, outgoingRequests });
+        }
 
         return {
           incoming: incomingRequests,
@@ -131,9 +138,7 @@ const useFriendsStore = create((set, get) => ({
           outgoing: [],
         };
       } finally {
-        set({
-          _fetchPendingPromise: null,
-        });
+        if (get()._pendingRequestId === requestId) set({ _fetchPendingPromise: null });
       }
     })();
 
@@ -157,16 +162,15 @@ const useFriendsStore = create((set, get) => ({
     if (!normalizedQuery) {
       set({
         searchResults: [],
+        searchLoading: false,
+        searchError: null,
         _searchQuery: '',
+        _searchRequestId: get()._searchRequestId + 1,
       });
 
       return [];
     }
 
-    /*
-     * If the exact same query is already being
-     * requested, reuse that request.
-     */
     if (
       get()._searchUsersPromise &&
       get()._searchQuery === normalizedQuery
@@ -179,8 +183,13 @@ const useFriendsStore = create((set, get) => ({
      * request. This prevents "sar" and "sarika"
      * from incorrectly sharing the same promise.
      */
+    const requestId = get()._searchRequestId + 1;
     set({
       _searchQuery: normalizedQuery,
+      _searchRequestId: requestId,
+      searchLoading: true,
+      searchError: null,
+      searchResults: [],
     });
 
     const promise = (async () => {
@@ -191,19 +200,17 @@ const useFriendsStore = create((set, get) => ({
           )}`
         );
 
-        const results = normalizeArray(
-          res.data
-        );
+        const results = dedupeUsers(res.data);
 
         /*
          * Only update results if this request is
          * still the latest search query.
          */
-        if (
-          get()._searchQuery === normalizedQuery
-        ) {
+        if (get()._searchRequestId === requestId) {
           set({
             searchResults: results,
+            searchLoading: false,
+            searchError: null,
           });
         }
 
@@ -214,21 +221,20 @@ const useFriendsStore = create((set, get) => ({
           error
         );
 
-        if (
-          get()._searchQuery === normalizedQuery
-        ) {
+        if (get()._searchRequestId === requestId) {
           set({
             searchResults: [],
+            searchLoading: false,
+            searchError: getErrorMessage(error, 'Search failed. Please try again.'),
           });
         }
 
-        return [];
+        return { error };
       } finally {
-        if (
-          get()._searchQuery === normalizedQuery
-        ) {
+        if (get()._searchRequestId === requestId) {
           set({
             _searchUsersPromise: null,
+            searchLoading: false,
           });
         }
       }
@@ -315,10 +321,20 @@ const useFriendsStore = create((set, get) => ({
         { friendId }
       );
 
+      const target = get().searchResults.find(
+        (person) => String(person?._id) === String(friendId)
+      );
+      if (target) {
+        set((state) => ({
+          outgoingRequests: dedupeUsers([...state.outgoingRequests, target]),
+        }));
+      }
+
       toast.success(
         'Friend request sent!'
       );
 
+      set({ _fetchPendingPromise: null });
       await get().fetchPendingRequests();
 
       return {
@@ -364,13 +380,23 @@ const useFriendsStore = create((set, get) => ({
         { friendId }
       );
 
+      const target = get().incomingRequests.find(
+        (person) => String(person?._id) === String(friendId)
+      );
+      set((state) => ({
+        incomingRequests: state.incomingRequests.filter(
+          (person) => String(person?._id) !== String(friendId)
+        ),
+        friends: target ? dedupeUsers([...state.friends, target]) : state.friends,
+      }));
+
       toast.success(
         'Friend request accepted!'
       );
 
       await Promise.all([
-        get().fetchFriends(),
-        get().fetchPendingRequests(),
+        (set({ _fetchFriendsPromise: null }), get().fetchFriends()),
+        (set({ _fetchPendingPromise: null }), get().fetchPendingRequests()),
       ]);
 
       return {

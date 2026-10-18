@@ -7,7 +7,6 @@ import * as z from "zod";
 
 import {
   LogIn,
-  Sparkles,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -16,7 +15,8 @@ import useAuthStore from "../store/useAuthStore";
 
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
-import Illustration from "../components/common/Illustration";
+import BrandMark from "../components/BrandMark";
+import LoginSanctuaryIllustration from "../components/LoginSanctuaryIllustration";
 
 const loginSchema = z.object({
   email: z
@@ -131,18 +131,7 @@ const Login = () => {
             to="/"
             className="flex items-center gap-3 mb-16 group"
           >
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform duration-500"
-              style={{
-                background: "var(--button)",
-                boxShadow: "var(--shadow)",
-              }}
-            >
-              <Sparkles
-                className="text-white w-6 h-6"
-                aria-hidden="true"
-              />
-            </div>
+            <BrandMark className="group-hover:rotate-6 transition-transform duration-500" />
 
             <span
               className="text-2xl font-bold tracking-tighter italic"
@@ -254,37 +243,29 @@ const Login = () => {
           Right Side: Visuals & Quote
       ===================================================== */}
 
-      <div className="hidden md:flex flex-1 relative flex-col items-center justify-center p-12 overflow-hidden">
-        {/* Animated Background Elements */}
-        <div
-          className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] animate-glow-pulse"
-          style={{
-            backgroundColor:
-              "var(--accent-light)",
-          }}
-        />
-
-        <div
-          className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full blur-[120px] animate-glow-pulse"
-          style={{
-            backgroundColor:
-              "var(--accent-light)",
-            animationDelay: "2s",
-          }}
-        />
-
-        {/* Study Sanctuary Illustration */}
-        <div className="relative z-10 w-full max-w-2xl flex flex-col items-center">
-          <div className="relative w-full aspect-square max-w-[500px]">
-            <Illustration
-              name="studySanctuary"
-              className="w-full h-full opacity-90"
-            />
+      <div className="login-sanctuary-panel hidden md:flex flex-1 relative flex-col items-center justify-center p-8 lg:p-12 overflow-hidden">
+        <div className="login-sanctuary-atmosphere" aria-hidden="true">
+          <div className="login-sanctuary-halo" />
+          <div className="login-sanctuary-teal-glow" />
+          <div className="login-sanctuary-orbit" />
+          <div className="login-fireflies">
+            <span style={{ left: "12%", top: "24%", animationDelay: "-2s" }} />
+            <span style={{ left: "79%", top: "19%", animationDelay: "-7s" }} />
+            <span style={{ left: "86%", top: "51%", animationDelay: "-4s" }} />
+            <span style={{ left: "18%", top: "70%", animationDelay: "-9s" }} />
+            <span style={{ left: "70%", top: "78%", animationDelay: "-1s" }} />
+            <span style={{ left: "44%", top: "14%", animationDelay: "-5s" }} />
+            <span style={{ left: "91%", top: "83%", animationDelay: "-3s" }} />
           </div>
+        </div>
 
-          <div className="mt-12 text-center max-w-lg">
+        {/* Twilight sanctuary illustration */}
+        <div className="relative z-10 w-full max-w-2xl flex flex-col items-center">
+          <LoginSanctuaryIllustration />
+
+          <div className="mt-9 lg:mt-11 text-center max-w-lg">
             <h3
-              className="text-3xl font-bold italic mb-4"
+              className="text-3xl lg:text-4xl font-bold italic mb-4 drop-shadow-[0_0_24px_rgba(196,181,253,0.32)]"
               style={{
                 color: "var(--text)",
               }}
@@ -298,15 +279,13 @@ const Login = () => {
                 color: "var(--text-secondary)",
               }}
             >
-              Step back into the warmth of your study
-              room. Every ritual you perform here brings
-              you closer to the master you are becoming.
+              Small steps today. A stronger you tomorrow.
             </p>
           </div>
         </div>
 
         {/* Branding Footer */}
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-6 opacity-30">
+        <div className="absolute bottom-7 lg:bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-6 opacity-45 pointer-events-none">
           <div
             className="h-[1px] w-12"
             style={{

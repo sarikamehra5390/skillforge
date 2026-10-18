@@ -68,20 +68,20 @@ const Navbar = () => {
       <div className="hidden max-w-md flex-1 md:block">
         <button
           type="button"
-          onClick={() => navigate("/search")}
+          onClick={() => navigate("/friends")}
           className="group relative flex w-full items-center gap-3 rounded-2xl px-4 py-2.5 text-left text-sm transition-all hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
           style={{
             backgroundColor: "var(--surface)",
             border: "1px solid var(--border)",
             color: "var(--text-secondary)",
           }}
-          aria-label="Search"
+            aria-label="Find friends"
         >
           <Search
             className="h-4 w-4"
             aria-hidden="true"
           />
-          <span>Search (Ctrl/⌘ K)</span>
+          <span>Find friends</span>
         </button>
       </div>
 

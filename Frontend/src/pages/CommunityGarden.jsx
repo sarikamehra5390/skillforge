@@ -131,7 +131,7 @@ const CommunityGarden = () => {
           <div className="flex justify-center">
             <button
               type="button"
-              onClick={() => navigate("/search")}
+              onClick={() => navigate("/friends")}
               className="px-6 py-3 bg-primary-500/20 text-primary-300 rounded-xl font-medium hover:bg-primary-500/30 transition-colors"
             >
               Find Friends

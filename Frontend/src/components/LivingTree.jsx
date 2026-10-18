@@ -11,14 +11,14 @@ import { useTree } from "../context/useTree";
 
 const EMPTY_LIST = [];
 
-const TREE_EMOJIS = {
-  sprout: "🌱",
-  classic: "🌳",
-  sakura: "🌸",
-  autumn: "🍁",
-  winter: "❄️",
-  cosmic: "🌌",
-  golden: "✨",
+const TREE_PALETTES = {
+  sprout: ["#35e7bd", "#72f2c4", "#a4ffca"],
+  classic: ["#35e7bd", "#72f2c4", "#a4ffca"],
+  sakura: ["#f28ad8", "#ffb7e8", "#ffe0f4"],
+  autumn: ["#ff9b51", "#ffc05e", "#ffe08a"],
+  winter: ["#73d9ff", "#a8eaff", "#e2f9ff"],
+  cosmic: ["#b78aff", "#dfadff", "#91e6ff"],
+  golden: ["#ffd45e", "#ffe892", "#fff4bd"],
 };
 
 const LivingTree = ({
@@ -66,32 +66,37 @@ const LivingTree = ({
     [safeSkills, safeSessions, unlockedAchievements]
   );
 
-  const treeHeight = Math.max(
-    60,
-    Number(treeStage?.stage) * 20 || 60
-  );
-
-  const treeEmoji =
-    TREE_EMOJIS[selectedTreeType] ||
-    treeStage?.emoji ||
-    TREE_EMOJIS.sprout;
+  const [leaf, flower, glow] = TREE_PALETTES[selectedTreeType] || TREE_PALETTES.sprout;
 
   return (
     <div className="relative flex h-96 w-full flex-col items-center justify-center">
-      {/* Tree trunk and main structure */}
-      <div className="relative">
-        {/* Trunk */}
+      {/* Glowing living plant, with the existing skill branches and earned decorations layered above it. */}
+      <div className="relative flex h-[270px] w-[270px] items-center justify-center sm:h-[320px] sm:w-[320px]">
         <motion.div
-          initial={{ scaleY: 0 }}
-          animate={{ scaleY: 1 }}
-          transition={{ duration: 1 }}
-          className="mx-auto w-8 rounded-full bg-gradient-to-t from-amber-800 to-amber-600"
-          style={{
-            height: treeHeight,
-            transformOrigin: "bottom",
-          }}
+          animate={{ boxShadow: isWatering ? `0 0 70px 18px ${glow}66` : `0 0 44px 8px ${glow}42` }}
+          transition={{ duration: 0.7 }}
+          className="absolute inset-3 rounded-full border-[5px]"
+          style={{ borderColor: `${glow}cc`, background: `radial-gradient(circle at 50% 55%, ${glow}22 0%, transparent 67%)` }}
           aria-hidden="true"
         />
+        <svg viewBox="0 0 320 320" className="relative z-10 h-[88%] w-[88%] drop-shadow-[0_0_18px_rgba(90,255,205,0.35)]" role="img" aria-label={`${selectedTreeType || "Living"} tree, stage ${treeStage?.stage || 1}`}>
+          <defs>
+            <linearGradient id="plantStem" x1="0" y1="1" x2="1" y2="0"><stop stopColor="#824b37"/><stop offset="1" stopColor="#d49a65"/></linearGradient>
+            <linearGradient id="plantLeaf" x1="0" y1="1" x2="1" y2="0"><stop stopColor={leaf}/><stop offset="1" stopColor={flower}/></linearGradient>
+            <filter id="plantGlow"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <ellipse cx="160" cy="263" rx="79" ry="18" fill="#5b382d" opacity=".92" />
+          <path d="M160 258 C158 224 165 197 160 165 C158 145 154 130 160 112" fill="none" stroke="url(#plantStem)" strokeWidth={Math.min(14, 6 + (Number(treeStage?.stage) || 1))} strokeLinecap="round" />
+          <path d="M160 194 C134 178 125 160 117 143 M161 177 C185 162 197 144 204 126 M160 157 C142 139 139 122 139 108" fill="none" stroke="url(#plantStem)" strokeWidth="7" strokeLinecap="round" />
+          {[
+            [133,174,-30],[116,142,-38],[187,159,32],[205,126,37],[147,132,-35],[160,108,0],[174,192,24],
+          ].slice(0, Math.min(7, 2 + (Number(treeStage?.stage) || 1))).map(([x,y,rotate], index) => (
+            <path key={index} d="M0 0 C-17 -17 -15 -37 0 -45 C17 -34 18 -15 0 0Z" transform={`translate(${x} ${y}) rotate(${rotate})`} fill="url(#plantLeaf)" filter="url(#plantGlow)" />
+          ))}
+        </svg>
+      </div>
+
+      <div className="relative -mt-16">
 
         {/* Tree crown based on stage */}
         <motion.div
@@ -109,17 +114,6 @@ const LivingTree = ({
           }}
           className="absolute -top-24 left-1/2 flex -translate-x-1/2 flex-col items-center"
         >
-          {/* Main tree emoji / visual */}
-          <div
-            className="mb-4 text-8xl"
-            role="img"
-            aria-label={`${
-              selectedTreeType || "current"
-            } tree`}
-          >
-            {treeEmoji}
-          </div>
-
           {/* Branches */}
           <div className="relative h-40 w-80">
             {treeData.branches.map(

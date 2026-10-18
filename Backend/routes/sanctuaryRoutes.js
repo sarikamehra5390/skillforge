@@ -3,10 +3,9 @@ const mongoose = require("mongoose");
 const SanctuarySettings = require("../models/SanctuarySettings");
 const User = require("../models/User");
 const auth = require("../middleware/auth");
+const isValidObjectId = require("../utils/isValidObjectId");
 
 const router = express.Router();
-
-const { isValidObjectId } = mongoose.Types;
 
 const VALID_THEMES = [
   "classic",
@@ -16,6 +15,8 @@ const VALID_THEMES = [
   "ghibli-sky",
   "rainy-evening",
   "starry-meadow",
+  "night-sanctuary",
+  "evening-sanctuary",
 ];
 
 const VALID_TREE_TYPES = [

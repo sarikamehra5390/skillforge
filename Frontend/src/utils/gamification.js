@@ -300,101 +300,35 @@ export const getTreeStage = (xp) => {
 // =========================================
 
 export const calculateCurrentStreak = (
-  sessions
+  sessions,
+  now = new Date()
 ) => {
-  const safeSessions =
-    normalizeArray(sessions);
+  const nowDate = new Date(now);
+  if (Number.isNaN(nowDate.getTime())) return 0;
+  const today = Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), nowDate.getUTCDate()) / 86400000;
+  const days = [...new Set(
+    normalizeArray(sessions)
+      .filter((session) => Number.isFinite(Number(session?.duration)) && Number(session.duration) > 0)
+      .map((session) => {
+        const completedAt = new Date(session?.completedAt);
+        return Number.isNaN(completedAt.getTime()) || completedAt > nowDate
+          ? null
+          : Date.UTC(completedAt.getUTCFullYear(), completedAt.getUTCMonth(), completedAt.getUTCDate()) / 86400000;
+      })
+      .filter((day) => day !== null)
+  )].sort((a, b) => b - a);
 
-  if (safeSessions.length === 0) {
-    return 0;
-  }
-
-  const validSessions =
-    safeSessions.filter(
-      (session) => {
-        const date = new Date(
-          session?.completedAt
-        );
-
-        return !Number.isNaN(
-          date.getTime()
-        );
-      }
-    );
-
-  if (validSessions.length === 0) {
-    return 0;
-  }
-
-  const dates = new Set();
-
-  validSessions.forEach((session) => {
-    const date = new Date(
-      session.completedAt
-    );
-
-    dates.add(date.toDateString());
-  });
-
-  const sortedDates = Array.from(
-    dates
-  ).sort(
-    (a, b) =>
-      new Date(b).getTime() -
-      new Date(a).getTime()
-  );
-
-  if (sortedDates.length === 0) {
-    return 0;
-  }
-
-  const today =
-    new Date().toDateString();
-
-  const yesterday = new Date(
-    Date.now() - 24 * 60 * 60 * 1000
-  ).toDateString();
-
-  if (
-    sortedDates[0] !== today &&
-    sortedDates[0] !== yesterday
-  ) {
-    return 0;
-  }
-
+  if (!days.length || days[0] < today - 1) return 0;
   let streak = 1;
-
-  let currentDate = new Date(
-    sortedDates[0]
-  );
-
-  for (
-    let i = 1;
-    i < sortedDates.length;
-    i++
-  ) {
-    const previousDate = new Date(
-      sortedDates[i]
-    );
-
-    const diffTime =
-      currentDate.getTime() -
-      previousDate.getTime();
-
-    const diffDays = Math.round(
-      diffTime /
-        (24 * 60 * 60 * 1000)
-    );
-
-    if (diffDays !== 1) {
-      break;
-    }
-
-    streak++;
-    currentDate = previousDate;
-  }
-
+  for (let index = 1; index < days.length && days[index - 1] - days[index] === 1; index++) streak++;
   return streak;
+};
+
+export const getUtcDayKey = (value = new Date()) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? null
+    : Math.floor(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) / 86400000);
 };
 
 // =========================================

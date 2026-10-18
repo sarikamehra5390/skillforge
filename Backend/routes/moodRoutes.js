@@ -13,9 +13,9 @@ const VALID_MOODS = [
 ];
 
 const startOfDay = (date = new Date()) => {
-  const result = new Date(date);
-  result.setHours(0, 0, 0, 0);
-  return result;
+  const value = new Date(date);
+  if (Number.isNaN(value.getTime())) return null;
+  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
 };
 
 // Check today's mood/check-in status

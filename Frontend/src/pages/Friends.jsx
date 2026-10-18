@@ -7,6 +7,7 @@ import {
   X,
   UserPlus,
   Trash2,
+  Loader2,
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
@@ -46,6 +47,9 @@ const Friends = () => {
   const searchResults = useFriendsStore(
     (state) => state.searchResults
   );
+  const searchLoading = useFriendsStore((state) => state.searchLoading);
+  const searchError = useFriendsStore((state) => state.searchError);
+  const storedSearchQuery = useFriendsStore((state) => state._searchQuery);
 
   const fetchFriends = useFriendsStore(
     (state) => state.fetchFriends
@@ -125,6 +129,7 @@ const Friends = () => {
     const query = debouncedQuery.trim();
 
     if (!query) {
+      searchUsers("");
       return;
     }
 
@@ -214,6 +219,14 @@ const Friends = () => {
       <h1 className="text-3xl font-bold text-white italic">
         Friends
       </h1>
+
+      <section aria-labelledby="find-friends-title">
+        <h2 id="find-friends-title" className="text-xl font-bold text-white mb-4 italic">Find Friends</h2>
+        <div className="relative">
+          <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+          <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search by username or display name..." aria-label="Search for friends" className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-400 focus:outline-none focus:border-primary-400/30" />
+        </div>
+      </section>
 
       {/* =====================================================
           My Friends
@@ -538,33 +551,12 @@ const Friends = () => {
           Find Friends
       ===================================================== */}
 
-      <section>
-        <h2 className="text-xl font-bold text-white mb-4 italic">
-          Find Friends
-        </h2>
-
-        <div className="mb-6">
-          <div className="relative">
-            <Search
-              size={20}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-              aria-hidden="true"
-            />
-
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(event) =>
-                setSearchQuery(event.target.value)
-              }
-              placeholder="Search by username or display name..."
-              aria-label="Search for friends"
-              className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-400 focus:outline-none focus:border-primary-400/30"
-            />
-          </div>
-        </div>
-
-        {searchQuery.trim() &&
+      <section aria-label="Friend search results">
+        {searchQuery.trim() && (searchLoading || debouncedQuery.trim() !== searchQuery.trim() || storedSearchQuery !== searchQuery.trim()) ? (
+          <GlassCard className="p-8 text-center text-slate-300"><Loader2 className="inline-block animate-spin mr-2" size={18} />Searching SkillForge users…</GlassCard>
+        ) : searchQuery.trim() && searchError ? (
+          <GlassCard className="p-8 text-center text-red-300">{searchError}</GlassCard>
+        ) : searchQuery.trim() &&
         safeSearchResults.filter(
           (resultUser) =>
             String(resultUser?._id) !==
@@ -585,7 +577,7 @@ const Friends = () => {
               Try a different search query
             </p>
           </GlassCard>
-        ) : (
+        ) : searchQuery.trim() ? (
           (() => {
             const filteredResults =
               safeSearchResults.filter(
@@ -595,7 +587,7 @@ const Friends = () => {
               );
 
             if (filteredResults.length === 0) {
-              return null;
+              return <GlassCard className="p-8 text-center text-slate-400">No matching users found. Try a different name.</GlassCard>;
             }
 
             return (
@@ -643,11 +635,11 @@ const Friends = () => {
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-white text-sm truncate">
+                            <Link to={`/friend/${resultId}`} className="font-bold text-white text-sm truncate hover:text-primary-300" aria-label={`View ${getDisplayName(resultUser)} profile`}>
                               {getDisplayName(
                                 resultUser
                               )}
-                            </h3>
+                            </Link>
 
                             <p className="text-xs text-slate-400">
                               Level{" "}
@@ -683,14 +675,9 @@ const Friends = () => {
                         </div>
 
                         {isFriendStatus ? (
-                          <div className="w-full px-3 py-2 rounded-xl bg-green-500/10 text-green-400 text-sm font-medium text-center">
-                            Already Friends
-                          </div>
+                          <div className="w-full px-3 py-2 rounded-xl bg-green-500/10 text-green-400 text-sm font-medium text-center">Already Friends</div>
                         ) : isIncomingStatus ? (
-                          <div className="w-full px-3 py-2 rounded-xl bg-yellow-500/10 text-yellow-400 text-sm font-medium text-center">
-                            Request Pending
-                            (Incoming)
-                          </div>
+                          <button type="button" disabled={actionLoading === `accept-${resultId}`} onClick={() => handleAction(`accept-${resultId}`, () => acceptFriendRequest(resultId))} className="w-full px-3 py-2 rounded-xl bg-yellow-500/10 text-yellow-300 text-sm font-medium text-center disabled:opacity-50">{actionLoading === `accept-${resultId}` ? "Accepting…" : "Accept Request"}</button>
                         ) : isOutgoingStatus ? (
                           <div className="w-full px-3 py-2 rounded-xl bg-slate-500/10 text-slate-400 text-sm font-medium text-center">
                             Request Sent
@@ -731,6 +718,8 @@ const Friends = () => {
               </div>
             );
           })()
+        ) : (
+          <p className="mt-3 text-sm text-slate-400">Enter a username or display name to discover SkillForge users.</p>
         )}
       </section>
     </div>

@@ -2,10 +2,9 @@ const express = require("express");
 const mongoose = require("mongoose");
 const Notification = require("../models/Notification");
 const auth = require("../middleware/auth");
+const isValidObjectId = require("../utils/isValidObjectId");
 
 const router = express.Router();
-
-const { isValidObjectId } = mongoose.Types;
 
 // Get all notifications for the authenticated user
 router.get("/", auth, async (req, res) => {

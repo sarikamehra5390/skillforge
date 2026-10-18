@@ -2,14 +2,14 @@ const express = require("express");
 const mongoose = require("mongoose");
 const Skill = require("../models/Skill");
 const Session = require("../models/Session");
+const User = require("../models/User");
 const auth = require("../middleware/auth");
+const isValidObjectId = require("../utils/isValidObjectId");
 const {
   calculateLevel,
-  calculateCurrentStreak,
+  calculateStreakState,
 } = require("../utils/gamification");
 const router = express.Router();
-
-const { isValidObjectId } = mongoose.Types;
 
 router.get("/", auth, async (req, res) => {
   try {
@@ -96,7 +96,7 @@ router.delete("/:id", auth, async (req, res) => {
     });
     const removedXP = deletedSessions.reduce(
       (total, session) =>
-        total + (Number(session.xpGained) || Number(session.duration) || 0),
+        total + (Number.isFinite(Number(session.xpGained)) ? Number(session.xpGained) : Number(session.duration) || 0),
       0
     );
 
@@ -105,16 +105,24 @@ router.delete("/:id", auth, async (req, res) => {
       userId: req.user._id,
     });
 
-    const user = req.user;
-    user.xp = Math.max(0, (user.xp || 0) - removedXP);
+    const user = await User.findByIdAndUpdate(req.user._id, [{ $set: { xp: { $max: [0, { $subtract: [{ $ifNull: ["$xp", 0] }, removedXP] }] } } }], { new: true });
     user.level = calculateLevel(user.xp);
     const remainingSessions = await Session.find({
       userId: user._id,
     });
-    user.streak = calculateCurrentStreak(remainingSessions);
-    await user.save();
+    const streakState = calculateStreakState(remainingSessions);
+    user.streak = streakState.streak;
+    user.longestStreak = Math.max(user.longestStreak || 0, streakState.longestStreak);
+    user.lastPracticeDate = streakState.lastPracticeDate;
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: { level: user.level, streak: user.streak, lastPracticeDate: streakState.lastPracticeDate },
+        $max: { longestStreak: user.longestStreak },
+      }
+    );
 
-    res.json({ message: "Skill deleted" });
+    res.json({ message: "Skill deleted", xp: user.xp, level: user.level, streak: user.streak, longestStreak: user.longestStreak });
   } catch (error) {
     console.error("DELETE SKILL ERROR:", error);
     res.status(500).json({ message: error.message });

@@ -80,6 +80,20 @@ export const THEME_OPTIONS = [
     name: "Starry Meadow",
     emoji: "⭐",
   },
+  {
+    id: "night-sanctuary",
+    name: "Night Sanctuary",
+    emoji: "🌌",
+    description: "A quiet moonlit forest with soft teal light",
+    preview: "linear-gradient(135deg, #101426, #292047 65%, #73e0d0)",
+  },
+  {
+    id: "evening-sanctuary",
+    name: "Evening Sanctuary",
+    emoji: "🌇",
+    description: "A warm plum sky with peach and amber glow",
+    preview: "linear-gradient(135deg, #281A36, #49305F 60%, #FFC477)",
+  },
 ];
 
 export const COMPANION_OPTIONS = [
@@ -372,5 +386,19 @@ export const THEME_STYLES = {
     accent: "text-purple-400",
     cardBg: "bg-indigo-900/50",
     border: "border-purple-500/30",
+  },
+
+  "night-sanctuary": {
+    background: "bg-gradient-to-br from-[#101426] via-[#191832] to-[#292047]",
+    accent: "text-[#B8A7FF]",
+    cardBg: "bg-[#292047]/80",
+    border: "border-[#B8A7FF]/25",
+  },
+
+  "evening-sanctuary": {
+    background: "bg-gradient-to-br from-[#281A36] via-[#49305F] to-[#392541]",
+    accent: "text-[#D9A0B8]",
+    cardBg: "bg-[#49305F]/80",
+    border: "border-[#D9A0B8]/25",
   },
 };

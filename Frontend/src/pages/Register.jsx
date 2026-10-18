@@ -2,14 +2,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { UserPlus, Sparkles } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import useAuthStore from "../store/useAuthStore";
 
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
-import Illustration from "../components/common/Illustration";
+import BrandMark from "../components/BrandMark";
 
 const registerSchema = z
   .object({
@@ -133,12 +133,7 @@ const Register = () => {
             to="/"
             className="flex items-center gap-3 mb-12 group"
           >
-            <div className="w-12 h-12 bg-primary-500 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/20 group-hover:rotate-6 transition-transform duration-500">
-              <Sparkles
-                className="text-white w-6 h-6"
-                aria-hidden="true"
-              />
-            </div>
+            <BrandMark className="group-hover:rotate-6 transition-transform duration-500" />
 
             <span className="text-2xl font-bold text-white tracking-tighter italic">
               SkillForge
@@ -256,11 +251,8 @@ const Register = () => {
 
         {/* Study Sanctuary Illustration */}
         <div className="relative z-10 w-full max-w-2xl flex flex-col items-center">
-          <div className="relative w-full aspect-square max-w-[500px]">
-            <Illustration
-              name="studySanctuary"
-              className="w-full h-full opacity-90"
-            />
+          <div className="relative w-full max-w-[640px] overflow-hidden rounded-3xl shadow-2xl">
+            <img src="/brand/skillforge-logo.png" alt="SkillForge — Empower your craft" className="block h-auto w-full" />
           </div>
 
           <div className="mt-12 text-center max-w-lg">

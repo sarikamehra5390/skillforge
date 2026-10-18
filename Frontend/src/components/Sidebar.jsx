@@ -9,16 +9,15 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   Users,
   Sprout,
   Settings,
   Bell,
-  Search as SearchIcon,
 } from "lucide-react";
 
 import { cn } from "../utils/cn";
 import useAuthStore from "../store/useAuthStore";
+import BrandMark from "./BrandMark";
 
 const Sidebar = ({
   sidebarOpen,
@@ -60,11 +59,6 @@ const Sidebar = ({
       icon: Users,
       label: "Friends",
       path: "/friends",
-    },
-    {
-      icon: SearchIcon,
-      label: "Find Friends",
-      path: "/search",
     },
     {
       icon: Sprout,
@@ -150,16 +144,7 @@ const Sidebar = ({
           !sidebarOpen && "justify-center"
         )}
       >
-        <div
-          className="animate-soft-float flex h-12 w-12 flex-shrink-0 rotate-3 items-center justify-center rounded-[1.25rem] shadow-lg"
-          style={{
-            background: "var(--button)",
-            boxShadow: "var(--shadow)",
-          }}
-          aria-hidden="true"
-        >
-          <Sparkles className="h-6 w-6 text-white" />
-        </div>
+        <BrandMark className="animate-soft-float rotate-3" />
 
         {sidebarOpen && (
           <span

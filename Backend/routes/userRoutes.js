@@ -7,11 +7,10 @@ const User = require("../models/User");
 const Session = require("../models/Session");
 const SanctuarySettings = require("../models/SanctuarySettings");
 const auth = require("../middleware/auth");
-const { calculateCurrentStreak } = require("../utils/gamification");
+const { calculateStreakState, getFreshStreakValue } = require("../utils/gamification");
+const isValidObjectId = require("../utils/isValidObjectId");
 
 const router = express.Router();
-
-const { isValidObjectId } = mongoose.Types;
 
 /* =========================================================
    Constants / Helpers
@@ -144,8 +143,6 @@ router.post("/register", async (req, res) => {
       const sanctuarySettings =
         await createDefaultSanctuarySettings(user._id);
 
-      console.log(`New user created: ${normalizedEmail}`);
-
       if (!process.env.JWT_SECRET) {
         throw new Error("JWT_SECRET is not configured on server");
       }
@@ -237,6 +234,28 @@ router.post("/login", async (req, res) => {
       });
     }
 
+    // Login hydrates the frontend directly, so refresh streak data here too;
+    // ProtectedRoute will not request /profile once this user is in auth state.
+    const sessions = await Session.find({ userId: user._id });
+    const streakState = calculateStreakState(sessions);
+    const longestStreak = Math.max(user.longestStreak || 0, streakState.longestStreak);
+    const streakUpdate = {
+      $set: {
+        streak: streakState.streak,
+        ...(streakState.lastPracticeDate
+          ? { lastPracticeDate: streakState.lastPracticeDate }
+          : {}),
+      },
+      $max: { longestStreak },
+    };
+    if (!streakState.lastPracticeDate) {
+      streakUpdate.$unset = { lastPracticeDate: 1 };
+    }
+    await User.updateOne({ _id: user._id }, streakUpdate);
+    user.streak = streakState.streak;
+    user.longestStreak = longestStreak;
+    user.lastPracticeDate = streakState.lastPracticeDate;
+
     const sanctuarySettings =
       await getSanctuarySettings(user._id);
 
@@ -260,6 +279,8 @@ router.post("/login", async (req, res) => {
         xp: user.xp,
         level: user.level,
         streak: user.streak,
+        longestStreak: user.longestStreak,
+        lastPracticeDate: user.lastPracticeDate,
         sanctuarySettings,
       },
     });
@@ -292,19 +313,12 @@ router.get("/profile", auth, async (req, res) => {
       userId: user._id,
     });
 
-    const currentStreak =
-      calculateCurrentStreak(allSessions);
-
-    if (user.streak !== currentStreak) {
-      user.streak = currentStreak;
-
-      if (
-        currentStreak >
-        (user.longestStreak || 0)
-      ) {
-        user.longestStreak = currentStreak;
-      }
-
+    const streakState = calculateStreakState(allSessions);
+    const longestStreak = Math.max(user.longestStreak || 0, streakState.longestStreak);
+    if (user.streak !== streakState.streak || user.longestStreak !== longestStreak || String(user.lastPracticeDate || '') !== String(streakState.lastPracticeDate || '')) {
+      user.streak = streakState.streak;
+      user.longestStreak = longestStreak;
+      user.lastPracticeDate = streakState.lastPracticeDate;
       await user.save();
     }
 
@@ -334,14 +348,22 @@ router.get("/search", auth, async (req, res) => {
   try {
     const searchTerm = req.query.q || req.query.query;
 
-    if (!searchTerm) {
+    if (searchTerm === undefined) {
       return res.status(200).json([]);
     }
 
-    const normalizedSearchTerm = String(searchTerm).trim();
+    if (typeof searchTerm !== "string") {
+      return res.status(400).json({ message: "Search query must be a string" });
+    }
+
+    const normalizedSearchTerm = searchTerm.trim();
 
     if (!normalizedSearchTerm) {
       return res.status(200).json([]);
+    }
+
+    if (normalizedSearchTerm.length > 80) {
+      return res.status(400).json({ message: "Search query must be 80 characters or fewer" });
     }
 
     const escapedTerm =
@@ -373,16 +395,23 @@ router.get("/search", auth, async (req, res) => {
       ],
     })
       .select(
-        "username displayName avatar xp level streak longestStreak lastPracticeDate gardenId"
+        "username displayName avatar xp level streak longestStreak lastPracticeDate"
       )
+      .limit(25)
       .lean();
 
-    return res.json(users);
+    return res.json(users.map((user) => {
+      const { lastPracticeDate, ...publicFields } = user;
+      return {
+        ...publicFields,
+        streak: getFreshStreakValue(user.streak, lastPracticeDate),
+      };
+    }));
   } catch (error) {
     console.error("SEARCH USERS ERROR:", error);
 
     return res.status(500).json({
-      message: error.message,
+      message: "Unable to search users right now",
     });
   }
 });
@@ -403,7 +432,7 @@ router.get("/:userId", async (req, res) => {
 
     const user = await User.findById(userId)
       .select(
-        "username displayName avatar bio level xp streak unlockedAchievements createdAt"
+        "username displayName avatar bio level xp streak lastPracticeDate unlockedAchievements createdAt"
       )
       .lean();
 
@@ -420,7 +449,7 @@ router.get("/:userId", async (req, res) => {
       bio: user.bio,
       level: user.level,
       xp: user.xp,
-      streak: user.streak,
+      streak: getFreshStreakValue(user.streak, user.lastPracticeDate),
       unlockedAchievements:
         user.unlockedAchievements,
       createdAt: user.createdAt,

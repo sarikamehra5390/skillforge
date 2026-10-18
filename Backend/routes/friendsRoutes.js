@@ -4,13 +4,22 @@ const Friend = require("../models/Friend");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
 const auth = require("../middleware/auth");
+const { getFreshStreakValue } = require("../utils/gamification");
+const isValidObjectId = require("../utils/isValidObjectId");
 
 const router = express.Router();
 
-const { isValidObjectId } = mongoose.Types;
-
 const FRIEND_USER_FIELDS =
-  "username displayName avatar xp level streak longestStreak";
+  "username displayName avatar xp level streak longestStreak lastPracticeDate";
+
+const publicFriendStats = (person) => {
+  if (!person) return person;
+  const { lastPracticeDate, ...publicFields } = person;
+  return {
+    ...publicFields,
+    streak: getFreshStreakValue(person.streak, lastPracticeDate),
+  };
+};
 
 router.post("/request", auth, async (req, res) => {
   try {
@@ -71,12 +80,17 @@ router.post("/request", auth, async (req, res) => {
 
     await friendRequest.save();
 
-    await Notification.create({
-      userId: friendId,
-      title: "New Friend Request",
-      message: `${req.user.username} sent you a friend request!`,
-      type: "friend",
-    });
+    try {
+      await Notification.create({
+        userId: friendId,
+        title: "New Friend Request",
+        message: `${req.user.username} sent you a friend request!`,
+        type: "friend",
+      });
+    } catch (notificationError) {
+      // The persisted friend request is authoritative; notification delivery is secondary.
+      console.error("Friend request notification error:", notificationError);
+    }
 
     return res.status(201).json({
       message: "Friend request sent successfully",
@@ -127,12 +141,16 @@ router.post("/accept", auth, async (req, res) => {
     friendRequest.status = "accepted";
     await friendRequest.save();
 
-    await Notification.create({
-      userId: friendId,
-      title: "Friend Request Accepted",
-      message: `${req.user.username} accepted your friend request!`,
-      type: "friend",
-    });
+    try {
+      await Notification.create({
+        userId: friendId,
+        title: "Friend Request Accepted",
+        message: `${req.user.username} accepted your friend request!`,
+        type: "friend",
+      });
+    } catch (notificationError) {
+      console.error("Friend acceptance notification error:", notificationError);
+    }
 
     return res.json({
       message: "Friend request accepted successfully",
@@ -262,7 +280,7 @@ router.get("/", auth, async (req, res) => {
             ? friendship.friendId
             : friendship.userId;
 
-        return friend;
+        return publicFriendStats(friend);
       })
       .filter(Boolean);
 
@@ -295,8 +313,8 @@ router.get("/pending", auth, async (req, res) => {
     ]);
 
     return res.json({
-      incoming: incomingRequests.map((request) => request.userId).filter(Boolean),
-      outgoing: outgoingRequests.map((request) => request.friendId).filter(Boolean),
+      incoming: incomingRequests.map((request) => publicFriendStats(request.userId)).filter(Boolean),
+      outgoing: outgoingRequests.map((request) => publicFriendStats(request.friendId)).filter(Boolean),
     });
   } catch (error) {
     console.error("Get pending requests error:", error);

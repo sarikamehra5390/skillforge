@@ -435,12 +435,20 @@ const ThemeTab = ({ onRestoreDefaults }) => {
               key={theme.id}
               type="button"
               onClick={() => changeTheme(theme.id)}
+              aria-pressed={isSelected}
               className={`rounded-2xl border-2 p-6 text-center transition-all ${
                 isSelected
                   ? "border-primary-400 bg-primary-400/10"
                   : "border-white/10 bg-white/5 hover:border-primary-300/30"
               }`}
             >
+              {theme.preview && (
+                <span
+                  className="mb-4 block h-12 rounded-xl border border-white/15 shadow-inner"
+                  style={{ background: theme.preview }}
+                  aria-hidden="true"
+                />
+              )}
               <div
                 className="mb-3 text-4xl"
                 aria-hidden="true"

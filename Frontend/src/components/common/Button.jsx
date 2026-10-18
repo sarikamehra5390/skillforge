@@ -6,6 +6,7 @@ const Button = ({
   variant = 'primary',
   size = 'md',
   type = 'button',
+  loading = false,
   ...props
 }) => {
   const variants = {
@@ -59,6 +60,7 @@ const Button = ({
   return (
     <button
       type={type}
+      aria-busy={loading || undefined}
       className={cn(
         'inline-flex cursor-pointer items-center justify-center rounded-xl font-semibold tracking-wide transition-all duration-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50',
         variantClass,
