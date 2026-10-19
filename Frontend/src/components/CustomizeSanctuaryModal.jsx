@@ -654,25 +654,9 @@ const MusicTab = ({ settings, updateSettings }) => {
     const newAmbience = currentMusic.includes(id)
       ? currentMusic.filter((item) => item !== id)
       : [...currentMusic, id];
-
-    const updates = { music: newAmbience };
-    const currentLayers = Array.isArray(settings?.audioLayers) ? settings.audioLayers : [];
-    const audioTrackByAmbience = {
-      rain: "rain", "rain-sounds": "rain",
-      wind: "wind", "wind-sounds": "wind",
-      birds: "birds", "bird-sounds": "birds",
-      "nature-sounds": "nature",
-    };
-    const audioTrack = audioTrackByAmbience[id];
-    if (audioTrack) {
-      const isActive = currentLayers.some((layer) => layer.soundId === audioTrack);
-      const audioLayers = isActive
-        ? currentLayers.filter((layer) => layer.soundId !== audioTrack)
-        : [...currentLayers, { soundId: audioTrack, volume: 0.25, muted: false }];
-      updates.audioLayers = audioLayers;
-      updates.audioTrack = audioLayers[0]?.soundId || "none";
-    }
-    updateSettings(updates);
+    // This list controls visual ambience only. Audio is managed independently
+    // by SoundSanctuaryStudio so selecting rain or wind cannot start playback.
+    updateSettings({ music: newAmbience });
   };
 
   return (

@@ -29,11 +29,12 @@ const initialLocalSettings =
 const useSanctuaryStore = create((set, get) => {
   let debounceTimer = null;
   let persistVersion = 0;
+  let settingsFetchId = 0;
 
   const mergeSettings = (settings = {}) => ({
     ...DEFAULT_SANCTUARY_SETTINGS,
     ...settings,
-    audioLayers: Array.isArray(settings.audioLayers) && (settings.audioLayers.length || settings.audioTrack === "none")
+    audioLayers: Array.isArray(settings.audioLayers)
       ? settings.audioLayers
       : settings.audioTrack && settings.audioTrack !== "none"
         ? [{ soundId: settings.audioTrack, volume: 1, muted: false }]
@@ -193,6 +194,27 @@ const useSanctuaryStore = create((set, get) => {
       return defaults;
     },
 
+    // Audio mixes are account-specific. Keep the authenticated user's copy on
+    // the server, but do not leave it in shared browser storage for the next
+    // account or for an offline settings fallback.
+    clearLocalAudioPreferences: () => {
+      const current = get().settings || loadSanctuaryFromStorage() || DEFAULT_SANCTUARY_SETTINGS;
+      const cleaned = mergeSettings({
+        ...current,
+        audioLayers: [],
+        audioTrack: "none",
+        audioVolume: DEFAULT_SANCTUARY_SETTINGS.audioVolume,
+        masterVolume: DEFAULT_SANCTUARY_SETTINGS.masterVolume,
+        audioMuted: false,
+        soundFavorites: [],
+        soundRecents: [],
+        savedSoundscapes: [],
+      });
+      set({ settings: cleaned });
+      saveSanctuaryToStorage(cleaned);
+      return cleaned;
+    },
+
     // =========================
     // Hydrate From Server
     // =========================
@@ -212,6 +234,7 @@ const useSanctuaryStore = create((set, get) => {
     // =========================
 
     fetchSettings: async () => {
+      const fetchId = ++settingsFetchId;
       const token =
         localStorage.getItem("token");
 
@@ -222,6 +245,7 @@ const useSanctuaryStore = create((set, get) => {
       set({
         loading: true,
       });
+      const requestVersion = persistVersion;
 
       try {
         const res = await api.get(
@@ -234,6 +258,16 @@ const useSanctuaryStore = create((set, get) => {
             ? res.data
             : {};
 
+        // A response from an older request, a prior account, or a request
+        // started before a local edit must not restore stale ambience.
+        if (
+          fetchId !== settingsFetchId ||
+          token !== localStorage.getItem("token") ||
+          requestVersion !== persistVersion
+        ) {
+          return get().settings;
+        }
+
         const settings =
           get().hydrateSettings(
             serverSettings
@@ -241,6 +275,14 @@ const useSanctuaryStore = create((set, get) => {
 
         return settings;
       } catch (error) {
+        if (
+          fetchId !== settingsFetchId ||
+          token !== localStorage.getItem("token") ||
+          requestVersion !== persistVersion
+        ) {
+          return get().settings;
+        }
+
         console.error(
           "Failed to fetch sanctuary settings:",
           error
@@ -248,9 +290,11 @@ const useSanctuaryStore = create((set, get) => {
 
         return get().initializeFromLocal();
       } finally {
-        set({
-          loading: false,
-        });
+        if (fetchId === settingsFetchId && token === localStorage.getItem("token")) {
+          set({
+            loading: false,
+          });
+        }
       }
     },
 

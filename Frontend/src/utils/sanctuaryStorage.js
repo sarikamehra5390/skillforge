@@ -75,15 +75,25 @@ const isObject = (value) =>
   typeof value === "object" &&
   !Array.isArray(value);
 
-const normalizeSettings = (settings = {}) => {
+export const normalizeSettings = (settings = {}) => {
   const source = isObject(settings)
     ? settings
     : {};
 
   const allowedSoundIds = new Set(["rain", "wind", "birds", "nature", "ocean", "fireplace", "white-noise", "pink-noise", "brown-noise"]);
-  const legacyLayer = allowedSoundIds.has(source.audioTrack) && source.audioTrack !== "none"
+  const visualSoundIds = {
+    rain: ["rain", "rain-sounds"],
+    wind: ["wind", "wind-sounds"],
+    birds: ["birds", "bird-sounds"],
+    nature: ["nature-sounds"],
+  };
+  const legacyTrackWasVisualOnly = Array.isArray(source.music) &&
+    (visualSoundIds[source.audioTrack] || []).some((id) => source.music.includes(id));
+  const legacyLayer = !legacyTrackWasVisualOnly && allowedSoundIds.has(source.audioTrack) && source.audioTrack !== "none"
     ? [{ soundId: source.audioTrack, volume: 1, muted: false }]
     : [];
+  // An explicit empty layer list is the canonical "no sound" preference.
+  // Never revive an old audioTrack value over it during hydration.
   const requestedLayers = Array.isArray(source.audioLayers) ? source.audioLayers : legacyLayer;
   const audioLayers = requestedLayers.filter((layer, index, all) =>
     layer && allowedSoundIds.has(layer.soundId) && all.findIndex((item) => item?.soundId === layer.soundId) === index
@@ -120,7 +130,7 @@ const normalizeSettings = (settings = {}) => {
     glowIntensity: ["subtle", "balanced", "magical"].includes(source.glowIntensity) ? source.glowIntensity : DEFAULT_SANCTUARY_SETTINGS.glowIntensity,
     backgroundAtmosphere: ["clear", "misty", "starry", "rainy"].includes(source.backgroundAtmosphere) ? source.backgroundAtmosphere : DEFAULT_SANCTUARY_SETTINGS.backgroundAtmosphere,
     cardSpacing: ["compact", "comfortable"].includes(source.cardSpacing) ? source.cardSpacing : DEFAULT_SANCTUARY_SETTINGS.cardSpacing,
-    audioTrack: ["none", "rain", "wind", "birds", "nature", "ocean", "fireplace", "white-noise", "pink-noise", "brown-noise"].includes(source.audioTrack) ? source.audioTrack : DEFAULT_SANCTUARY_SETTINGS.audioTrack,
+    audioTrack: audioLayers[0]?.soundId || "none",
     audioVolume: Number.isFinite(source.audioVolume) ? Math.min(1, Math.max(0, source.audioVolume)) : DEFAULT_SANCTUARY_SETTINGS.audioVolume,
     audioMuted: typeof source.audioMuted === "boolean" ? source.audioMuted : DEFAULT_SANCTUARY_SETTINGS.audioMuted,
     audioLayers,

@@ -266,6 +266,13 @@ export const MUSIC_OPTIONS = [
   },
 ];
 
+// The visual Rain toggle is intentionally distinct from the legacy
+// "rain-sounds" option and the background-atmosphere selector.
+export const isVisualRainEnabled = (settings) =>
+  settings?.ambientEffects === true &&
+  Array.isArray(settings.music) &&
+  settings.music.includes("rain");
+
 export const DECORATION_OPTIONS = [
   {
     id: "lanterns",

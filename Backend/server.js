@@ -166,14 +166,28 @@ app.use((req, res) => {
 // ─────────────────────────────────────────────
 
 app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err);
+  const statusCode = Number.isInteger(err.statusCode)
+    ? err.statusCode
+    : Number.isInteger(err.status)
+      ? err.status
+      : 500;
 
-  const statusCode = err.statusCode || 500;
+  if (NODE_ENV === "production") {
+    console.error("Unhandled API error:", {
+      method: req.method,
+      path: req.path,
+      statusCode,
+      name: err.name,
+    });
+  } else {
+    console.error("Unhandled API error:", err);
+  }
 
   res.status(statusCode).json({
     success: false,
-    message:
-      err.message || "Internal server error",
+    message: statusCode < 500 && err.message
+      ? err.message
+      : "Internal server error",
 
     ...(NODE_ENV !== "production" && {
       stack: err.stack,

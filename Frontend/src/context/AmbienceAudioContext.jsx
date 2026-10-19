@@ -15,7 +15,6 @@ const asLayers = (settings = {}) => {
 
 export const AmbienceAudioProvider = ({ children }) => {
   const settings = useSanctuaryStore((state) => state.settings);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const contextRef = useRef(null);
   const masterRef = useRef(null);
   const layersRef = useRef(new Map());
@@ -177,6 +176,7 @@ export const AmbienceAudioProvider = ({ children }) => {
   }, []);
 
   const play = useCallback(async () => {
+    if (!useAuthStore.getState().isAuthenticated) return;
     const current = useSanctuaryStore.getState().settings || {};
     const activeLayers = asLayers(current);
     if (!activeLayers.length) {
@@ -290,7 +290,9 @@ export const AmbienceAudioProvider = ({ children }) => {
       layersRef.current.forEach((_, id) => stopLayer(id));
       return () => clearTimeout(resetPlayback);
     }
-    layersRef.current.forEach((_, id) => { if (!desiredIds.has(id)) stopLayer(id, 180); });
+    // Dispose removed tracks before starting any newly selected tracks. This
+    // prevents even a short overlap when switching rain and wind.
+    layersRef.current.forEach((_, id) => { if (!desiredIds.has(id)) stopLayer(id); });
     layers.forEach((layer) => {
       const sound = SOUND_BY_ID[layer.soundId];
       if (!sound) return;
@@ -322,12 +324,13 @@ export const AmbienceAudioProvider = ({ children }) => {
     });
   }, [layers, masterMuted, masterVolume]);
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      const resetPlayback = setTimeout(() => stopAll(), 0);
-      return () => clearTimeout(resetPlayback);
+  useEffect(() => useAuthStore.subscribe((state, previousState) => {
+    if (previousState.isAuthenticated && !state.isAuthenticated) {
+      // Stop synchronously at the auth boundary. Deferring this allowed a fast
+      // logout/login transition to cancel cleanup and carry playback forward.
+      stopAll();
     }
-  }, [isAuthenticated, stopAll]);
+  }), [stopAll]);
 
   useEffect(() => () => {
     clearFade();

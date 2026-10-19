@@ -1,4 +1,5 @@
 import useSanctuaryStore from "../store/useSanctuaryStore";
+import { isVisualRainEnabled } from "../utils/sanctuary";
 
 const createParticles = (count, generator) =>
   Array.from({ length: count }, (_, index) => ({
@@ -43,7 +44,6 @@ const Ambience = () => {
   const atmosphereAmbience = {
     misty: "fog",
     starry: "stars",
-    rainy: "rain",
   }[settings?.backgroundAtmosphere];
   const activeAmbience = [...new Set(atmosphereAmbience ? [...selectedAmbience, atmosphereAmbience] : selectedAmbience)];
   const effectsEnabled = settings?.ambientEffects === true;
@@ -128,7 +128,7 @@ const Ambience = () => {
       `}</style>
 
       {/* Rain Effect */}
-      {effectsEnabled && activeAmbience.includes("rain") && (
+      {isVisualRainEnabled(settings) && (
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
           {rainParticles.slice(0, Math.round(rainParticles.length * effectCount)).map((particle) => (
             <div

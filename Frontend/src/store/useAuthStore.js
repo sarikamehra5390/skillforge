@@ -170,6 +170,8 @@ const useAuthStore = create((set, get) => ({
       _checkAuthPromise: null,
     });
 
+    useSanctuaryStore.getState().clearLocalAudioPreferences();
+
     useSanctuaryStore.setState({
       settings: null,
       loading: false,
