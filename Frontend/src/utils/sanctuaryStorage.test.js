@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { DEFAULT_SANCTUARY_SETTINGS, normalizeSettings } from "./sanctuaryStorage.js";
+import {
+  DEFAULT_SANCTUARY_SETTINGS,
+  normalizeSettings,
+  loadSanctuaryFromStorage,
+  saveSanctuaryToStorage,
+  hasPendingSanctuaryChanges,
+  markSanctuaryChangesPending,
+  clearPendingSanctuaryChanges,
+} from "./sanctuaryStorage.js";
 import { isVisualRainEnabled } from "./sanctuary.js";
 
 test("fresh Sanctuary settings start with no selected audio", () => {
@@ -51,4 +59,31 @@ test("visual rain requires the explicit Rain visual selection", () => {
   assert.equal(isVisualRainEnabled({ ambientEffects: true, music: ["rain-sounds"] }), false);
   assert.equal(isVisualRainEnabled({ ambientEffects: false, music: ["rain"] }), false);
   assert.equal(isVisualRainEnabled({ ambientEffects: true, music: ["rain"] }), true);
+});
+
+test("sanctuary cache and pending edits are isolated by account", () => {
+  const previousStorage = globalThis.localStorage;
+  const values = new Map();
+  globalThis.localStorage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: (key) => values.delete(key),
+  };
+
+  try {
+    saveSanctuaryToStorage({ theme: "sakura-valley", treeType: "sakura" }, "account-a");
+    saveSanctuaryToStorage({ theme: "ghibli-sky", treeType: "cosmic" }, "account-b");
+    markSanctuaryChangesPending("account-a");
+
+    assert.equal(loadSanctuaryFromStorage("account-a").theme, "sakura-valley");
+    assert.equal(loadSanctuaryFromStorage("account-b").theme, "ghibli-sky");
+    assert.equal(hasPendingSanctuaryChanges("account-a"), true);
+    assert.equal(hasPendingSanctuaryChanges("account-b"), false);
+
+    clearPendingSanctuaryChanges("account-a");
+    assert.equal(hasPendingSanctuaryChanges("account-a"), false);
+  } finally {
+    if (previousStorage === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = previousStorage;
+  }
 });

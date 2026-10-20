@@ -2,7 +2,6 @@ import {
   useEffect,
 } from "react";
 
-import useAuthStore from "../store/useAuthStore";
 import useSanctuaryStore from "../store/useSanctuaryStore";
 import ThemeContext from "./ThemeContextValue";
 // Define all theme configurations with CSS variables
@@ -314,10 +313,6 @@ const THEMES = {
 export const ThemeProvider = ({
   children,
 }) => {
-  const user = useAuthStore(
-    (state) => state.user
-  );
-
   const settings = useSanctuaryStore(
     (state) => state.settings
   );
@@ -326,10 +321,7 @@ export const ThemeProvider = ({
     (state) => state.updateSettings
   );
 
-  const themeId =
-    settings?.theme ||
-    user?.sanctuarySettings?.theme ||
-    "classic";
+  const themeId = settings?.theme || "classic";
   const currentTheme = THEMES[themeId]
     ? themeId
     : "classic";

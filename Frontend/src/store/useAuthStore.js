@@ -162,7 +162,19 @@ const useAuthStore = create((set, get) => ({
   // Logout
   // =========================
 
-  logout: (redirect = true) => {
+  logout: async (redirect = true) => {
+    const sanctuaryStore = useSanctuaryStore.getState();
+    let saveResult = null;
+
+    // Preserve the final debounced edit before removing the bearer token.
+    // A 401-triggered logout cannot save with an invalid token, so it only
+    // cancels pending work and leaves the account-scoped dirty cache intact.
+    if (redirect) {
+      saveResult = await sanctuaryStore.flushSettings();
+    } else {
+      sanctuaryStore.cancelPendingPersistence();
+    }
+
     localStorage.removeItem('token');
     saveStoredUser(null);
 
@@ -176,12 +188,15 @@ const useAuthStore = create((set, get) => ({
       _checkAuthPromise: null,
     });
 
-    useSanctuaryStore.getState().clearLocalAudioPreferences();
-
     useSanctuaryStore.setState({
       settings: null,
       loading: false,
+      saving: false,
     });
+
+    if (saveResult?.success === false) {
+      toast.error('Some sanctuary changes could not be saved. They are kept on this device and will retry after you sign in again.');
+    }
 
     // Only show the toast for an intentional logout.
     // The Axios interceptor uses logout(false).

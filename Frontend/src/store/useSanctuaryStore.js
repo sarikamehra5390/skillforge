@@ -1,10 +1,14 @@
 import { create } from "zustand";
+import { toast } from "sonner";
 import api from "../api/axios";
 import {
   DEFAULT_SANCTUARY_SETTINGS,
   loadSanctuaryFromStorage,
   saveSanctuaryToStorage,
   pickPersistableFields,
+  hasPendingSanctuaryChanges,
+  markSanctuaryChangesPending,
+  clearPendingSanctuaryChanges,
 } from "../utils/sanctuaryStorage";
 
 const TEXT_FIELDS = [
@@ -29,6 +33,8 @@ const initialLocalSettings =
 const useSanctuaryStore = create((set, get) => {
   let debounceTimer = null;
   let persistVersion = 0;
+  let persistedVersion = 0;
+  let persistenceQueue = Promise.resolve({ success: true });
   let settingsFetchId = 0;
 
   const mergeSettings = (settings = {}) => ({
@@ -79,6 +85,10 @@ const useSanctuaryStore = create((set, get) => {
         payload
       );
 
+      if (token !== localStorage.getItem("token")) {
+        return { success: true, stale: true, settings: get().settings };
+      }
+
       /*
        * If a newer update happened while this request
        * was in flight, do not overwrite the newer
@@ -110,6 +120,9 @@ const useSanctuaryStore = create((set, get) => {
         saving: false,
       });
 
+      persistedVersion = version;
+      clearPendingSanctuaryChanges();
+
       saveSanctuaryToStorage(merged);
 
       return {
@@ -121,6 +134,7 @@ const useSanctuaryStore = create((set, get) => {
         "Failed to update sanctuary settings:",
         error
       );
+      toast.error("Your sanctuary changes could not be saved. They are kept on this device and will retry after you sign in again.");
 
       /*
        * Keep the local state. The user's changes should
@@ -146,6 +160,17 @@ const useSanctuaryStore = create((set, get) => {
         });
       }
     }
+  };
+
+  const enqueuePersistence = (settingsSnapshot, version) => {
+    const request = persistenceQueue.then(() => {
+      if (version !== persistVersion) {
+        return { success: true, stale: true, settings: get().settings };
+      }
+      return persistToServer(settingsSnapshot, version);
+    });
+    persistenceQueue = request.catch((error) => ({ success: false, error }));
+    return request;
   };
 
   return {
@@ -194,25 +219,31 @@ const useSanctuaryStore = create((set, get) => {
       return defaults;
     },
 
-    // Audio mixes are account-specific. Keep the authenticated user's copy on
-    // the server, but do not leave it in shared browser storage for the next
-    // account or for an offline settings fallback.
-    clearLocalAudioPreferences: () => {
-      const current = get().settings || loadSanctuaryFromStorage() || DEFAULT_SANCTUARY_SETTINGS;
-      const cleaned = mergeSettings({
-        ...current,
-        audioLayers: [],
-        audioTrack: "none",
-        audioVolume: DEFAULT_SANCTUARY_SETTINGS.audioVolume,
-        masterVolume: DEFAULT_SANCTUARY_SETTINGS.masterVolume,
-        audioMuted: false,
-        soundFavorites: [],
-        soundRecents: [],
-        savedSoundscapes: [],
-      });
-      set({ settings: cleaned });
-      saveSanctuaryToStorage(cleaned);
-      return cleaned;
+    flushSettings: async () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
+      }
+
+      const token = localStorage.getItem("token");
+      const settings = get().settings;
+      if (!token || !settings || persistedVersion === persistVersion) {
+        const previousResult = await persistenceQueue;
+        return previousResult?.success === false
+          ? { ...previousResult, settings }
+          : { success: Boolean(token), skipped: !token, settings };
+      }
+
+      return enqueuePersistence(settings, persistVersion);
+    },
+
+    cancelPendingPersistence: () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
+      }
+      settingsFetchId += 1;
+      set({ loading: false, saving: false });
     },
 
     // =========================
@@ -222,11 +253,16 @@ const useSanctuaryStore = create((set, get) => {
     hydrateSettings: (serverSettings = {}) => {
       const local =
         loadSanctuaryFromStorage();
+      const hasPendingChanges = hasPendingSanctuaryChanges();
+      const hydrated = applySettings(hasPendingChanges
+        ? { ...serverSettings, ...local }
+        : { ...local, ...serverSettings });
 
-      return applySettings({
-        ...local,
-        ...serverSettings,
-      });
+      if (hasPendingChanges && localStorage.getItem("token")) {
+        enqueuePersistence(hydrated, persistVersion);
+      }
+
+      return hydrated;
     },
 
     // =========================
@@ -239,7 +275,7 @@ const useSanctuaryStore = create((set, get) => {
         localStorage.getItem("token");
 
       if (!token) {
-        return get().initializeFromLocal();
+        return get().settings || get().initializeFromLocal();
       }
 
       set({
@@ -288,7 +324,9 @@ const useSanctuaryStore = create((set, get) => {
           error
         );
 
-        return get().initializeFromLocal();
+        // The login/profile response already contains the persisted settings.
+        // A failed refresh must not replace those values with local defaults.
+        return get().settings || loadSanctuaryFromStorage() || null;
       } finally {
         if (fetchId === settingsFetchId && token === localStorage.getItem("token")) {
           set({
@@ -342,6 +380,9 @@ const useSanctuaryStore = create((set, get) => {
       saveSanctuaryToStorage(
         newSettings
       );
+      if (localStorage.getItem("token")) {
+        markSanctuaryChangesPending();
+      }
 
       /*
        * Every update receives a new version.
@@ -371,7 +412,7 @@ const useSanctuaryStore = create((set, get) => {
         const latestSettings =
           get().settings;
 
-        persistToServer(
+        enqueuePersistence(
           latestSettings,
           currentVersion
         );

@@ -1,6 +1,39 @@
 export const SANCTUARY_STORAGE_KEY =
   "skillforge_sanctuary";
 
+const getStoredAccountId = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem("skillforge_user") || "null");
+    const id = user?.id || user?._id;
+    return id ? String(id) : null;
+  } catch {
+    return null;
+  }
+};
+
+const getStorageKey = (accountId = getStoredAccountId()) =>
+  accountId
+    ? `${SANCTUARY_STORAGE_KEY}:${encodeURIComponent(accountId)}`
+    : SANCTUARY_STORAGE_KEY;
+
+const getPendingKey = (accountId = getStoredAccountId()) =>
+  accountId ? `${getStorageKey(accountId)}:pending` : null;
+
+export function hasPendingSanctuaryChanges(accountId = getStoredAccountId()) {
+  const key = getPendingKey(accountId);
+  return Boolean(key && localStorage.getItem(key) === "true");
+}
+
+export function markSanctuaryChangesPending(accountId = getStoredAccountId()) {
+  const key = getPendingKey(accountId);
+  if (key) localStorage.setItem(key, "true");
+}
+
+export function clearPendingSanctuaryChanges(accountId = getStoredAccountId()) {
+  const key = getPendingKey(accountId);
+  if (key) localStorage.removeItem(key);
+}
+
 export const DEFAULT_SANCTUARY_SETTINGS = {
   theme: "classic",
   treeType: "sprout",
@@ -169,11 +202,9 @@ export function pickPersistableFields(
   return normalizeSettings(picked);
 }
 
-export function loadSanctuaryFromStorage() {
+export function loadSanctuaryFromStorage(accountId = getStoredAccountId()) {
   try {
-    const raw = localStorage.getItem(
-      SANCTUARY_STORAGE_KEY
-    );
+    const raw = localStorage.getItem(getStorageKey(accountId));
 
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -189,10 +220,12 @@ export function loadSanctuaryFromStorage() {
     );
   }
 
-  /*
-   * Backward compatibility with the older
-   * storage keys used by SkillForge.
-   */
+  // Shared legacy values have no account ownership metadata. Only migrate
+  // them before any account is known; never expose one account's cache to
+  // another account during login or offline recovery.
+  if (accountId) return null;
+
+  /* Backward compatibility with older anonymous storage keys. */
   try {
     const legacyTheme =
       localStorage.getItem(
@@ -238,30 +271,28 @@ export function loadSanctuaryFromStorage() {
 }
 
 export function saveSanctuaryToStorage(
-  settings
+  settings,
+  accountId = getStoredAccountId()
 ) {
   try {
     const persistable =
       pickPersistableFields(settings);
 
-    localStorage.setItem(
-      SANCTUARY_STORAGE_KEY,
-      JSON.stringify(persistable)
-    );
+    localStorage.setItem(getStorageKey(accountId), JSON.stringify(persistable));
 
     /*
      * Keep legacy keys synchronized for
      * backward compatibility with any older
      * components that may still read them.
      */
-    if (persistable.theme) {
+    if (!accountId && persistable.theme) {
       localStorage.setItem(
         "skillforge_theme",
         persistable.theme
       );
     }
 
-    if (persistable.treeType) {
+    if (!accountId && persistable.treeType) {
       localStorage.setItem(
         "skillForgeSelectedTree",
         persistable.treeType

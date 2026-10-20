@@ -110,9 +110,7 @@ export const TreeProvider = ({
     }
   }, [user, unlockedTrees]);
 
-  const configuredTree =
-    settings?.treeType ||
-    user?.sanctuarySettings?.treeType;
+  const configuredTree = settings?.treeType;
   const selectedTree = unlockedTrees.includes(configuredTree)
     ? configuredTree
     : unlockedTrees[0] || "sprout";
