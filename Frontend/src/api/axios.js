@@ -50,21 +50,8 @@ api.interceptors.response.use(
           await authStore.logout(false);
         }
 
-        // Redirect only if the user isn't already on an auth page
-        if (
-          typeof window !== 'undefined' &&
-          window.location.pathname !== '/login' &&
-          window.location.pathname !== '/register'
-        ) {
-          const currentPath =
-            window.location.pathname + window.location.search;
-
-          const redirectPath = encodeURIComponent(currentPath);
-
-          window.location.replace(
-            `/login?redirect=${redirectPath}`
-          );
-        }
+        // ProtectedRoute observes the cleared auth state and performs the
+        // single client-side redirect to the existing /login route.
       } catch (logoutError) {
         console.error('Logout after 401 failed:', logoutError);
       } finally {

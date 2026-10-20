@@ -102,9 +102,6 @@ const ProfileDropdown = ({
       );
     } finally {
       onClose();
-      navigate("/login", {
-        replace: true,
-      });
     }
   };
 

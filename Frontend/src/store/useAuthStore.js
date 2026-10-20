@@ -204,12 +204,6 @@ const useAuthStore = create((set, get) => ({
       toast.success('Logged out successfully!');
     }
 
-    if (
-      redirect &&
-      typeof window !== 'undefined'
-    ) {
-      window.location.replace('/login');
-    }
   },
 
   // =========================

@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   BookOpen,
@@ -26,8 +26,6 @@ const Sidebar = ({
   const logout = useAuthStore(
     (state) => state.logout
   );
-
-  const navigate = useNavigate();
 
   const menuItems = [
     {
@@ -87,10 +85,6 @@ const Sidebar = ({
       await logout();
     } catch (error) {
       console.error("Logout failed:", error);
-    } finally {
-      navigate("/login", {
-        replace: true,
-      });
     }
   };
 
