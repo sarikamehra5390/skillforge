@@ -76,35 +76,23 @@ function MainLayout({ children }) {
 
     const initializeAuthenticatedUser =
       async () => {
-        try {
-          const {
-            hasCheckedInToday,
-          } = await checkMoodToday();
+        const [moodResult, settingsResult] = await Promise.allSettled([
+          checkMoodToday(),
+          fetchSettings(),
+        ]);
 
-          if (
-            !cancelled &&
-            !hasCheckedInToday
-          ) {
+        if (cancelled) return;
+
+        if (moodResult.status === "fulfilled") {
+          if (!moodResult.value?.hasCheckedInToday) {
             setShowCheckInModal(true);
           }
-        } catch (error) {
-          if (!cancelled) {
-            console.error(
-              "Failed to check today's mood:",
-              error
-            );
-          }
+        } else {
+          console.error("Failed to check today's mood:", moodResult.reason);
         }
 
-        try {
-          await fetchSettings();
-        } catch (error) {
-          if (!cancelled) {
-            console.error(
-              "Failed to fetch sanctuary settings:",
-              error
-            );
-          }
+        if (settingsResult.status === "rejected") {
+          console.error("Failed to fetch sanctuary settings:", settingsResult.reason);
         }
       };
 

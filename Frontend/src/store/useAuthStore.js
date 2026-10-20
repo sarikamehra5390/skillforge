@@ -37,7 +37,8 @@ const useAuthStore = create((set, get) => ({
   user: getStoredUser(),
   token: localStorage.getItem('token'),
   isAuthenticated: Boolean(localStorage.getItem('token')),
-  loading: false,
+  loading: Boolean(localStorage.getItem('token')),
+  authChecked: !localStorage.getItem('token'),
   error: null,
 
   _checkAuthPromise: null,
@@ -69,6 +70,7 @@ const useAuthStore = create((set, get) => ({
         token,
         isAuthenticated: true,
         loading: false,
+        authChecked: true,
         error: null,
       });
 
@@ -87,6 +89,7 @@ const useAuthStore = create((set, get) => ({
         error: errMsg,
         loading: false,
         isAuthenticated: false,
+        authChecked: true,
       });
 
       toast.error(errMsg);
@@ -127,6 +130,7 @@ const useAuthStore = create((set, get) => ({
         token,
         isAuthenticated: true,
         loading: false,
+        authChecked: true,
         error: null,
       });
 
@@ -145,6 +149,7 @@ const useAuthStore = create((set, get) => ({
         error: errMsg,
         loading: false,
         isAuthenticated: false,
+        authChecked: true,
       });
 
       toast.error(errMsg);
@@ -166,6 +171,7 @@ const useAuthStore = create((set, get) => ({
       token: null,
       isAuthenticated: false,
       loading: false,
+      authChecked: true,
       error: null,
       _checkAuthPromise: null,
     });
@@ -212,6 +218,7 @@ const useAuthStore = create((set, get) => ({
         token: null,
         isAuthenticated: false,
         loading: false,
+        authChecked: true,
         error: null,
         _checkAuthPromise: null,
       });
@@ -245,6 +252,7 @@ const useAuthStore = create((set, get) => ({
           token,
           isAuthenticated: true,
           loading: false,
+          authChecked: true,
           error: null,
         });
 
@@ -262,6 +270,7 @@ const useAuthStore = create((set, get) => ({
           token: null,
           isAuthenticated: false,
           loading: false,
+          authChecked: true,
           error: null,
         });
 
@@ -363,7 +372,13 @@ const useAuthStore = create((set, get) => ({
       user: updatedUser,
     });
 
-    hydrateSanctuary(updatedUser);
+    // XP, streak, and other profile counters are refreshed frequently (for
+    // example after saving a ritual). They do not represent a settings
+    // refresh, so replaying the user's possibly stale sanctuarySettings here
+    // could undo a newer theme selection in the sanctuary store.
+    if (Object.prototype.hasOwnProperty.call(updates || {}, 'sanctuarySettings')) {
+      hydrateSanctuary(updatedUser);
+    }
   },
 }));
 
