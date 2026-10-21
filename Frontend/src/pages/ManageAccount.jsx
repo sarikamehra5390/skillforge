@@ -90,10 +90,15 @@ const ManageAccount = () => {
 
     // Password validation
     if (newPassword) {
-      if (newPassword.length < 6) {
+      if (Array.from(newPassword).length < 15) {
         toast.error(
-          "New password must be at least 6 characters."
+          "New password must be at least 15 characters."
         );
+        return;
+      }
+
+      if (new TextEncoder().encode(newPassword).length > 72) {
+        toast.error("New password must be 72 UTF-8 bytes or fewer.");
         return;
       }
 
@@ -277,6 +282,7 @@ const ManageAccount = () => {
                 placeholder="New password"
                 type="password"
                 autoComplete="new-password"
+                maxLength={72}
               />
 
               <Input
@@ -292,6 +298,7 @@ const ManageAccount = () => {
                 placeholder="Confirm password"
                 type="password"
                 autoComplete="new-password"
+                maxLength={72}
               />
             </div>
           </div>

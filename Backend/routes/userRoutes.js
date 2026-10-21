@@ -10,6 +10,7 @@ const SanctuarySettings = require("../models/SanctuarySettings");
 const auth = require("../middleware/auth");
 const { calculateStreakState, getFreshStreakValue } = require("../utils/gamification");
 const isValidObjectId = require("../utils/isValidObjectId");
+const { validateNewPassword } = require("../utils/passwordPolicy");
 
 const router = express.Router();
 
@@ -94,13 +95,11 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    if (
-      typeof password !== "string" ||
-      password.length < 6
-    ) {
+    const passwordError = validateNewPassword(password);
+    if (passwordError) {
       return res.status(400).json({
         success: false,
-        message: "Password must be at least 6 characters",
+        message: passwordError,
       });
     }
 
@@ -113,9 +112,9 @@ router.post("/register", async (req, res) => {
       });
 
       if (existingEmail) {
-        return res.status(400).json({
+        return res.status(409).json({
           success: false,
-          message: "Email is already registered. Please sign in.",
+          message: "An account with those details already exists. Try signing in or choose different details.",
         });
       }
 
@@ -124,9 +123,9 @@ router.post("/register", async (req, res) => {
       });
 
       if (existingUsername) {
-        return res.status(400).json({
+        return res.status(409).json({
           success: false,
-          message: "Username is already taken. Please choose another.",
+          message: "An account with those details already exists. Try signing in or choose different details.",
         });
       }
 
@@ -169,27 +168,20 @@ router.post("/register", async (req, res) => {
       });
     } catch (innerError) {
       if (innerError.code === 11000) {
-        const field =
-          Object.keys(innerError.keyPattern || {})[0];
-
-        const fieldName = field
-          ? field.charAt(0).toUpperCase() + field.slice(1)
-          : "Value";
-
-        return res.status(400).json({
+        return res.status(409).json({
           success: false,
-          message: `${fieldName} is already in use.`,
+          message: "An account with those details already exists. Try signing in or choose different details.",
         });
       }
 
       throw innerError;
     }
   } catch (error) {
-    console.error("REGISTER ERROR:", error);
+    console.error("REGISTER ERROR:", { name: error.name, code: error.code });
 
-    return res.status(400).json({
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Unable to register right now. Please try again.",
     });
   }
 });
@@ -334,14 +326,12 @@ router.post("/login", async (req, res) => {
     if (process.env.NODE_ENV === "production") {
       console.error("LOGIN ERROR:", { name: error.name, code: error.code });
     } else {
-      console.error("LOGIN ERROR:", error);
+      console.error("LOGIN ERROR:", { name: error.name, code: error.code });
     }
 
     return res.status(500).json({
       success: false,
-      message: process.env.NODE_ENV === "production"
-        ? "Login failed. Please try again."
-        : error.message,
+      message: "Login failed. Please try again.",
     });
   } finally {
     console.info("LOGIN TIMING:", {
@@ -395,10 +385,10 @@ router.get("/profile", auth, async (req, res) => {
 
     return res.json(userWithSettings);
   } catch (error) {
-    console.error("GET PROFILE ERROR:", error);
+    console.error("GET PROFILE ERROR:", { name: error.name, code: error.code });
 
     return res.status(500).json({
-      message: error.message,
+      message: "Unable to load your profile right now. Please try again.",
     });
   }
 });
@@ -471,7 +461,7 @@ router.get("/search", auth, async (req, res) => {
       };
     }));
   } catch (error) {
-    console.error("SEARCH USERS ERROR:", error);
+    console.error("SEARCH USERS ERROR:", { name: error.name, code: error.code });
 
     return res.status(500).json({
       message: "Unable to search users right now",
@@ -518,10 +508,10 @@ router.get("/:userId", async (req, res) => {
       createdAt: user.createdAt,
     });
   } catch (error) {
-    console.error("GET PUBLIC PROFILE ERROR:", error);
+    console.error("GET PUBLIC PROFILE ERROR:", { name: error.name, code: error.code });
 
     return res.status(500).json({
-      message: error.message,
+      message: "Unable to load this profile right now. Please try again.",
     });
   }
 });
@@ -610,13 +600,10 @@ router.put("/profile", auth, async (req, res) => {
     /* ---------- Password ---------- */
 
     if (password !== undefined) {
-      if (
-        typeof password !== "string" ||
-        password.length < 6
-      ) {
+      const passwordError = validateNewPassword(password);
+      if (passwordError) {
         return res.status(400).json({
-          message:
-            "Password must be at least 6 characters",
+          message: passwordError,
         });
       }
 

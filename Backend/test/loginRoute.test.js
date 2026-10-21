@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const express = require("express");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Session = require("../models/Session");
 const SanctuarySettings = require("../models/SanctuarySettings");
@@ -129,5 +130,69 @@ test("invalid credentials do not start session or sanctuary work", async (t) => 
     });
     assert.equal(response.status, 401);
     assert.equal((await response.json()).message, "Invalid credentials");
+  });
+});
+
+test("registration hashes a compliant password and preserves its response contract", async (t) => {
+  const originalFindOne = User.findOne;
+  const originalCreate = User.create;
+  const originalSettingsCreate = SanctuarySettings.create;
+  const password = "correct horse battery staple";
+  let createdUser;
+
+  User.findOne = async () => null;
+  User.create = async (data) => {
+    createdUser = data;
+    return {
+      _id: "507f1f77bcf86cd799439011",
+      username: data.username,
+      email: data.email,
+      xp: 0,
+      level: 1,
+      streak: 0,
+    };
+  };
+  SanctuarySettings.create = async ({ userId }) => ({ userId, theme: "classic" });
+  t.after(() => {
+    User.findOne = originalFindOne;
+    User.create = originalCreate;
+    SanctuarySettings.create = originalSettingsCreate;
+  });
+
+  await withLoginServer(async (loginUrl) => {
+    const response = await fetch(loginUrl.replace("/login", "/register"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "learner", email: "learner@example.com", password }),
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 201);
+    assert.equal(body.success, true);
+    assert.ok(body.token);
+    assert.equal(body.user.username, "learner");
+    assert.notEqual(createdUser.password, password);
+    assert.equal(await bcrypt.compare(password, createdUser.password), true);
+    assert.equal(JSON.stringify(body).includes(password), false);
+    assert.equal(JSON.stringify(body).includes(createdUser.password), false);
+    assert.equal(jwt.verify(body.token, process.env.JWT_SECRET).id, "507f1f77bcf86cd799439011");
+  });
+});
+
+test("registration rejects short and over-limit passwords before database reads", async (t) => {
+  const originalFindOne = User.findOne;
+  User.findOne = () => assert.fail("Invalid password must be rejected before database access");
+  t.after(() => { User.findOne = originalFindOne; });
+
+  await withLoginServer(async (loginUrl) => {
+    for (const password of ["short-password", "a".repeat(73)]) {
+      const response = await fetch(loginUrl.replace("/login", "/register"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: "learner", email: "learner@example.com", password }),
+      });
+      assert.equal(response.status, 400);
+      assert.match((await response.json()).message, /15 characters|72 UTF-8 bytes/);
+    }
   });
 });

@@ -30,10 +30,8 @@ const registerSchema = z
 
     password: z
       .string()
-      .min(
-        6,
-        "Password must be at least 6 characters"
-      ),
+      .refine((password) => Array.from(password).length >= 15, "Password must be at least 15 characters")
+      .refine((password) => new TextEncoder().encode(password).length <= 72, "Password must be 72 UTF-8 bytes or fewer"),
 
     confirmPassword: z.string(),
   })
@@ -185,6 +183,7 @@ const Register = () => {
               type={passwordVisible ? "text" : "password"}
               placeholder="••••••••"
               {...register("password")}
+              maxLength={72}
               error={errors.password?.message}
               autoComplete="new-password"
               className="bg-white/5 border-white/10 focus:border-primary-500/50"
@@ -196,6 +195,7 @@ const Register = () => {
               type={confirmVisible ? "text" : "password"}
               placeholder="••••••••"
               {...register("confirmPassword")}
+              maxLength={72}
               error={errors.confirmPassword?.message}
               autoComplete="new-password"
               className="bg-white/5 border-white/10 focus:border-primary-500/50"

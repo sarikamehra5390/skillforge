@@ -1,10 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
-if (!process.env.JWT_SECRET) {
-  console.error("FATAL: JWT_SECRET environment variable is not set");
-}
-
 const auth = async (req, res, next) => {
   try {
     // Make sure JWT_SECRET is available
@@ -43,9 +39,14 @@ const auth = async (req, res, next) => {
     }
 
     // Verify JWT
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Login and registration issue HS256 tokens. Pin the verification
+    // algorithm so a token signed with an unintended algorithm is never
+    // accepted through jsonwebtoken's default algorithm selection.
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
 
-    if (!decoded?.id) {
+    if (!decoded?.id || !Number.isFinite(decoded.exp)) {
       return res.status(401).json({
         success: false,
         message: "Invalid authentication token",
@@ -68,7 +69,7 @@ const auth = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error("Authentication error:", error.message);
+    console.error("Authentication error:", { name: error.name });
 
     // JWT-specific errors
     if (error.name === "TokenExpiredError") {
@@ -93,9 +94,12 @@ const auth = async (req, res, next) => {
       });
     }
 
-    return res.status(401).json({
+    // Database and infrastructure failures are not authentication failures.
+    // Returning 401 here makes clients discard a still-valid token during a
+    // transient outage and can cause repeated login redirects.
+    return res.status(500).json({
       success: false,
-      message: error.message || "Please authenticate",
+      message: "Authentication could not be verified. Please try again.",
     });
   }
 };

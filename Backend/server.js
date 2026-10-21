@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const mongoose = require("mongoose");
 
 const userRoutes = require("./routes/userRoutes");
@@ -53,6 +54,8 @@ if (NODE_ENV === "production") {
 // ─────────────────────────────────────────────
 // CORS
 // ─────────────────────────────────────────────
+
+app.use(helmet());
 
 const corsOrigins = NODE_ENV === "production"
   ? [FRONTEND_URL]
