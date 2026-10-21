@@ -562,7 +562,7 @@ const Skills = () => {
 
       {/* Skills Grid */}
       {error ? (
-        <GlassCard className="p-8 border-red-500/20 bg-red-500/5">
+        <GlassCard className="p-4 sm:p-6 md:p-8 border-red-500/20 bg-red-500/5">
           <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
             <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-400 shrink-0">
               <AlertCircle
@@ -672,7 +672,7 @@ const Skills = () => {
           aria-modal="true"
           aria-labelledby="add-skill-title"
         >
-          <GlassCard className="w-full max-w-md p-10 border-white/10 shadow-2xl rounded-[2.5rem]">
+          <GlassCard className="w-full max-w-md p-5 sm:p-8 md:p-10 border-white/10 shadow-2xl rounded-[2.5rem]">
             <h2
               id="add-skill-title"
               className="text-3xl font-bold text-white mb-8 tracking-tight"
@@ -751,7 +751,7 @@ const Skills = () => {
           aria-modal="true"
           aria-labelledby="edit-skill-title"
         >
-          <GlassCard className="w-full max-w-md p-10 border-white/10 shadow-2xl rounded-[2.5rem]">
+          <GlassCard className="w-full max-w-md p-5 sm:p-8 md:p-10 border-white/10 shadow-2xl rounded-[2.5rem]">
             <h2
               id="edit-skill-title"
               className="text-3xl font-bold text-white mb-8 tracking-tight"

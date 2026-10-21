@@ -443,7 +443,7 @@ const Sessions = () => {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <GlassCard className="p-8 flex items-center gap-8 group bg-white/[0.02] border-white/5">
+        <GlassCard className="p-4 sm:p-6 md:p-8 flex items-center gap-8 group bg-white/[0.02] border-white/5">
           <div className="w-16 h-16 bg-primary-500/10 rounded-[1.5rem] flex items-center justify-center text-primary-400 group-hover:scale-110 transition-transform duration-500">
             <History
               size={28}
@@ -462,7 +462,7 @@ const Sessions = () => {
           </div>
         </GlassCard>
 
-        <GlassCard className="p-8 flex items-center gap-8 group bg-white/[0.02] border-white/5">
+        <GlassCard className="p-4 sm:p-6 md:p-8 flex items-center gap-8 group bg-white/[0.02] border-white/5">
           <div className="w-16 h-16 bg-secondary-500/10 rounded-[1.5rem] flex items-center justify-center text-secondary-400 group-hover:scale-110 transition-transform duration-500">
             <Clock
               size={28}
@@ -484,7 +484,7 @@ const Sessions = () => {
           </div>
         </GlassCard>
 
-        <GlassCard className="p-8 flex items-center gap-8 group bg-white/[0.02] border-white/5">
+        <GlassCard className="p-4 sm:p-6 md:p-8 flex items-center gap-8 group bg-white/[0.02] border-white/5">
           <div className="w-16 h-16 bg-warm-amber/10 rounded-[1.5rem] flex items-center justify-center text-warm-amber group-hover:scale-110 transition-transform duration-500">
             <Calendar
               size={28}
@@ -531,7 +531,7 @@ const Sessions = () => {
       {/* Timeline */}
       <div className="relative">
         {error ? (
-          <GlassCard className="p-8 border-red-500/20 bg-red-500/5">
+          <GlassCard className="p-4 sm:p-6 md:p-8 border-red-500/20 bg-red-500/5">
             <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
               <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-400 shrink-0">
                 <AlertCircle
@@ -634,7 +634,7 @@ const Sessions = () => {
           aria-modal="true"
           aria-labelledby="log-session-title"
         >
-          <GlassCard className="w-full max-w-md p-10 border-white/10 shadow-2xl rounded-[2.5rem]">
+          <GlassCard className="w-full max-w-md p-5 sm:p-8 md:p-10 border-white/10 shadow-2xl rounded-[2.5rem]">
             <h2
               id="log-session-title"
               className="text-3xl font-bold text-white mb-8 tracking-tight italic"

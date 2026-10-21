@@ -404,7 +404,7 @@ const Analytics = () => {
       {/* High Level Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {/* Growth Index */}
-        <GlassCard className="p-8 border-t-2 border-t-primary-400 group">
+        <GlassCard className="p-4 sm:p-6 md:p-8 border-t-2 border-t-primary-400 group">
           <p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.2em]">
             Growth Index
           </p>
@@ -433,7 +433,7 @@ const Analytics = () => {
         </GlassCard>
 
         {/* Cycle Average */}
-        <GlassCard className="p-8 border-t-2 border-t-secondary-400">
+        <GlassCard className="p-4 sm:p-6 md:p-8 border-t-2 border-t-secondary-400">
           <p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.2em]">
             Cycle Average
           </p>
@@ -454,7 +454,7 @@ const Analytics = () => {
         </GlassCard>
 
         {/* Growth Goal */}
-        <GlassCard className="p-8 border-t-2 border-t-warm-amber">
+        <GlassCard className="p-4 sm:p-6 md:p-8 border-t-2 border-t-warm-amber">
           <p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.2em]">
             Growth Goal
           </p>
@@ -487,7 +487,7 @@ const Analytics = () => {
         </GlassCard>
 
         {/* Peak Day */}
-        <GlassCard className="p-8 border-t-2 border-t-emerald-400">
+        <GlassCard className="p-4 sm:p-6 md:p-8 border-t-2 border-t-emerald-400">
           <p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.2em]">
             Peak Day
           </p>
@@ -504,7 +504,7 @@ const Analytics = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Weekly Practice Trends */}
-        <GlassCard className="p-8">
+        <GlassCard className="p-4 sm:p-6 md:p-8">
           <div className="flex items-center justify-between mb-10">
             <h3 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-3 italic">
               <TrendingUp
@@ -616,7 +616,7 @@ const Analytics = () => {
         </GlassCard>
 
         {/* Skill Distribution */}
-        <GlassCard className="p-8">
+        <GlassCard className="p-4 sm:p-6 md:p-8">
           <h3 className="text-sm font-black text-white uppercase tracking-[0.3em] mb-10 flex items-center gap-3 italic">
             <Clock
               size={20}

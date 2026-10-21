@@ -145,7 +145,7 @@ const Search = () => {
 
       {/* Empty Search */}
       {!hasQuery ? (
-        <GlassCard className="p-12 text-center">
+        <GlassCard className="p-5 sm:p-8 md:p-12 text-center">
           <Users
             size={64}
             className="mx-auto text-slate-500 mb-4"
@@ -162,7 +162,7 @@ const Search = () => {
         </GlassCard>
       ) : searchResults.length === 0 ? (
         /* No Results */
-        <GlassCard className="p-12 text-center">
+        <GlassCard className="p-5 sm:p-8 md:p-12 text-center">
           <Users
             size={64}
             className="mx-auto text-slate-500 mb-4"

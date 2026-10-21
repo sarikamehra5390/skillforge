@@ -176,7 +176,7 @@ const NotificationSettings = () => {
         Notification Settings
       </h1>
 
-      <GlassCard className="p-8 space-y-6">
+      <GlassCard className="p-4 sm:p-6 md:p-8 space-y-6">
         {toggleItems.map((item) => {
           const Icon = item.icon;
           const enabled = Boolean(

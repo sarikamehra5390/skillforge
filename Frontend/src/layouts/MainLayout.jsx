@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
@@ -23,10 +23,29 @@ const fireflies = Array.from({ length: 12 }, (_, index) => ({
 }));
 
 function MainLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(
+  const [sidebarExpanded, setSidebarExpanded] = useState(
     () => typeof window !== "undefined" &&
       window.matchMedia("(min-width: 768px)").matches
   );
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const menuButtonRef = useRef(null);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setMobileNavOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mobileNavOpen]);
 
   const showCheckInModal = useAppStore(
     (state) => state.showCheckInModal
@@ -110,7 +129,7 @@ function MainLayout({ children }) {
   ]);
 
   return (
-    <div className="ambient-bg flex h-screen w-screen overflow-hidden overflow-x-hidden font-sans selection:bg-primary-500/30">
+    <div className="ambient-bg flex min-h-dvh w-full min-w-0 flex-col overflow-x-clip font-sans selection:bg-primary-500/30 md:h-dvh md:flex-row md:overflow-hidden">
       {/* Background Magical Elements */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="animate-glow-pulse absolute left-[-10%] top-[-10%] h-[40%] w-[40%] rounded-full bg-primary-500/10 blur-[120px]" />
@@ -142,28 +161,32 @@ function MainLayout({ children }) {
       </div>
 
       {/* Mobile Sidebar Backdrop */}
-      {sidebarOpen && (
+      {mobileNavOpen && (
         <button
           type="button"
           aria-label="Close navigation menu"
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
           onClick={() =>
-            setSidebarOpen(false)
+            setMobileNavOpen(false)
           }
         />
       )}
 
       <Sidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
+        sidebarExpanded={sidebarExpanded}
+        setSidebarExpanded={setSidebarExpanded}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
       />
 
-      <div className="relative z-10 flex min-w-0 w-0 flex-1 flex-col">
+      <div className="relative z-10 flex min-h-0 min-w-0 w-full flex-1 flex-col md:w-0">
         <Navbar
-          setSidebarOpen={setSidebarOpen}
+          onMenuClick={() => setMobileNavOpen(true)}
+          menuButtonRef={menuButtonRef}
+          mobileMenuOpen={mobileNavOpen}
         />
 
-        <main className="custom-scrollbar flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8">
+        <main className="custom-scrollbar min-h-0 min-w-0 flex-1 overflow-y-visible p-3 sm:p-4 md:overflow-y-auto md:p-8">
           <div className="mx-auto w-full min-w-0 max-w-7xl">
             {children}
           </div>

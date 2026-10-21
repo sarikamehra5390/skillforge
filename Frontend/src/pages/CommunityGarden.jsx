@@ -113,7 +113,7 @@ const CommunityGarden = () => {
           </p>
         </div>
 
-        <GlassCard className="p-12 text-center">
+        <GlassCard className="p-5 sm:p-8 md:p-12 text-center">
           <Sprout
             size={64}
             className="mx-auto text-slate-500 mb-4"
@@ -156,7 +156,7 @@ const CommunityGarden = () => {
       </div>
 
       {/* Garden Stage Display */}
-      <GlassCard className="p-12 text-center">
+      <GlassCard className="p-5 sm:p-8 md:p-12 text-center">
         <motion.div
           key={gardenLevel}
           initial={{ scale: 0.8, opacity: 0 }}

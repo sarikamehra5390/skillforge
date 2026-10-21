@@ -301,7 +301,7 @@ const Achievements = () => {
         </div>
 
         {/* Mobile Hero */}
-        <div className="flex flex-col items-center space-y-8 p-8 text-center md:hidden">
+        <div className="flex flex-col items-center space-y-8 p-4 sm:p-6 md:p-8 text-center md:hidden">
           <div className="relative w-full max-w-xs">
             <Illustration
               name="constellationOfSkills"
@@ -450,7 +450,7 @@ const Achievements = () => {
             <GlassCard
               key={achievementKey}
               className={cn(
-                "group relative overflow-hidden border-white/5 p-10 transition-all duration-700",
+                "group relative overflow-hidden border-white/5 p-5 sm:p-8 md:p-10 transition-all duration-700",
                 isUnlocked
                   ? "opacity-100 hover:border-primary-500/30"
                   : "opacity-40 grayscale blur-[1px] transition-all duration-500 hover:blur-none"

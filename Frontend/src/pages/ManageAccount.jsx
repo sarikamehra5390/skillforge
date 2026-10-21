@@ -178,7 +178,7 @@ const ManageAccount = () => {
         Manage Account
       </h1>
 
-      <GlassCard className="p-8">
+      <GlassCard className="p-4 sm:p-6 md:p-8">
         <form
           onSubmit={handleSubmit}
           className="space-y-6"

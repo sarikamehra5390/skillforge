@@ -95,17 +95,17 @@ const CustomizeSanctuaryModal = () => {
             initial={{ opacity: 0, scale: 0.9, y: 50 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 50 }}
-            className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
+            className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-8"
             role="dialog"
             aria-modal="true"
             aria-labelledby="sanctuary-modal-title"
           >
-            <GlassCard className="pointer-events-auto flex h-full max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden">
+            <GlassCard className="pointer-events-auto flex h-[calc(100dvh-1rem)] max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden sm:h-[calc(100dvh-2rem)]">
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-white/10 p-6">
+              <div className="flex items-center justify-between gap-2 border-b border-white/10 p-3 sm:p-4 md:p-6">
                 <h2
                   id="sanctuary-modal-title"
-                  className="text-3xl font-bold italic tracking-tight"
+                  className="text-lg font-bold italic tracking-tight sm:text-2xl md:text-3xl"
                   style={{ color: "var(--text)" }}
                 >
                   Customize Your Sanctuary
@@ -114,7 +114,7 @@ const CustomizeSanctuaryModal = () => {
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="rounded-full p-2 transition-colors hover:bg-white/10"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-white/10"
                   aria-label="Close sanctuary customization"
                 >
                   <X
@@ -150,7 +150,7 @@ const CustomizeSanctuaryModal = () => {
               </div>
 
               {/* Tab Content */}
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 md:p-6">
                 <AnimatePresence mode="wait">
                   {activeTab === "tree" && (
                     <TreeTab key="tree" />

@@ -238,7 +238,7 @@ const Friends = () => {
         </h2>
 
         {safeFriends.length === 0 ? (
-          <GlassCard className="p-8 text-center">
+          <GlassCard className="p-4 sm:p-6 md:p-8 text-center">
             <Users
               size={48}
               className="mx-auto text-slate-500 mb-4"
@@ -553,16 +553,16 @@ const Friends = () => {
 
       <section aria-label="Friend search results">
         {searchQuery.trim() && (searchLoading || debouncedQuery.trim() !== searchQuery.trim() || storedSearchQuery !== searchQuery.trim()) ? (
-          <GlassCard className="p-8 text-center text-slate-300"><Loader2 className="inline-block animate-spin mr-2" size={18} />Searching SkillForge users…</GlassCard>
+          <GlassCard className="p-4 sm:p-6 md:p-8 text-center text-slate-300"><Loader2 className="inline-block animate-spin mr-2" size={18} />Searching SkillForge users…</GlassCard>
         ) : searchQuery.trim() && searchError ? (
-          <GlassCard className="p-8 text-center text-red-300">{searchError}</GlassCard>
+          <GlassCard className="p-4 sm:p-6 md:p-8 text-center text-red-300">{searchError}</GlassCard>
         ) : searchQuery.trim() &&
         safeSearchResults.filter(
           (resultUser) =>
             String(resultUser?._id) !==
             String(user?._id)
         ).length === 0 ? (
-          <GlassCard className="p-8 text-center">
+          <GlassCard className="p-4 sm:p-6 md:p-8 text-center">
             <Users
               size={48}
               className="mx-auto text-slate-500 mb-4"
@@ -587,7 +587,7 @@ const Friends = () => {
               );
 
             if (filteredResults.length === 0) {
-              return <GlassCard className="p-8 text-center text-slate-400">No matching users found. Try a different name.</GlassCard>;
+              return <GlassCard className="p-4 sm:p-6 md:p-8 text-center text-slate-400">No matching users found. Try a different name.</GlassCard>;
             }
 
             return (

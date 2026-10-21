@@ -181,7 +181,7 @@ const FriendProfile = () => {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
-        <GlassCard className="p-10 max-w-md text-center border-red-500/20 bg-red-500/5">
+        <GlassCard className="p-5 sm:p-8 md:p-10 max-w-md text-center border-red-500/20 bg-red-500/5">
           <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/10 flex items-center justify-center text-red-400">
             <AlertCircle
               size={40}
@@ -329,7 +329,7 @@ const FriendProfile = () => {
       </button>
 
       {/* Hero Section */}
-      <GlassCard className="p-8 text-center relative overflow-hidden">
+      <GlassCard className="p-4 sm:p-6 md:p-8 text-center relative overflow-hidden">
         {/* Subtle theme layer */}
         {selectedTheme && (
           <div

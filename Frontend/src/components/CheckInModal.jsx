@@ -103,7 +103,7 @@ const CheckInModal = ({ isOpen, onClose }) => {
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="relative z-10 w-full max-w-lg"
           >
-            <GlassCard className="p-10">
+            <GlassCard className="p-5 sm:p-8 md:p-10">
               <div className="mb-8 text-center">
                 <div
                   className="mb-4 text-6xl"

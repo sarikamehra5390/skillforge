@@ -167,7 +167,7 @@ const NotificationPanel = ({
             y: -10,
             scale: 0.95,
           }}
-          className="absolute right-0 top-full z-50 mt-2 flex max-h-[500px] w-96 flex-col rounded-3xl border border-white/10 bg-forge-900/95 shadow-2xl backdrop-blur-3xl"
+          className="absolute right-0 top-full z-50 mt-2 flex max-h-[min(70dvh,500px)] w-[min(24rem,calc(100vw-1.5rem))] max-w-[calc(100vw-1.5rem)] flex-col rounded-3xl border border-white/10 bg-forge-900/95 shadow-2xl backdrop-blur-3xl"
           role="dialog"
           aria-label="Notifications"
         >

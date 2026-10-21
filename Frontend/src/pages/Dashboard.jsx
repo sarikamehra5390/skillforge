@@ -428,7 +428,7 @@ const Dashboard = () => {
               {missions.map((mission) => (
                 <GlassCard
                   key={mission.id}
-                  className="p-10 group/card hover:bg-white/[0.04] transition-all duration-700 relative overflow-hidden"
+                  className="p-5 sm:p-8 md:p-10 group/card hover:bg-white/[0.04] transition-all duration-700 relative overflow-hidden"
                 >
                   {mission.completed && (
                     <div
@@ -599,7 +599,7 @@ const Dashboard = () => {
 
         <div className="space-y-12">
           {/* Tree Health Card */}
-          <GlassCard className="p-10 bg-gradient-to-br from-warm-amber/10 via-transparent to-primary-500/10 border-warm-amber/20 animate-breathing">
+          <GlassCard className="p-5 sm:p-8 md:p-10 bg-gradient-to-br from-warm-amber/10 via-transparent to-primary-500/10 border-warm-amber/20 animate-breathing">
             <div className="flex items-center gap-4 mb-10">
               <div className="w-2 h-2 rounded-full bg-warm-amber" />
 
@@ -690,7 +690,7 @@ const Dashboard = () => {
           <div className="relative group">
             <div className="absolute inset-0 bg-warm-amber/10 blur-[60px] rounded-full group-hover:bg-warm-amber/20 transition-colors duration-1000" />
 
-            <GlassCard className="p-10 relative bg-forge-900/40 border-white/5 overflow-hidden">
+            <GlassCard className="p-5 sm:p-8 md:p-10 relative bg-forge-900/40 border-white/5 overflow-hidden">
               <Sparkles
                 className="absolute -top-6 -right-6 w-32 h-32 text-warm-amber/5 rotate-12"
                 aria-hidden="true"

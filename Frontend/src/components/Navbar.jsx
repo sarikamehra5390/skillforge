@@ -4,6 +4,7 @@ import {
   Search,
   Flame,
   Zap,
+  Menu,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../store/useAuthStore";
@@ -12,8 +13,9 @@ import useSanctuaryStore from "../store/useSanctuaryStore";
 import { calculateXPProgress } from "../utils/gamification";
 import ProfileDropdown from "./ProfileDropdown";
 import NotificationPanel from "./NotificationPanel";
+import BrandMark from "./BrandMark";
 
-const Navbar = () => {
+const Navbar = ({ onMenuClick, menuButtonRef, mobileMenuOpen }) => {
   const navigate = useNavigate();
 
   const user = useAuthStore((state) => state.user);
@@ -58,12 +60,28 @@ const Navbar = () => {
 
   return (
     <header
-      className="sticky top-0 z-40 flex h-20 items-center justify-between border-b px-10 backdrop-blur-3xl"
+      className="sticky top-0 z-40 flex min-h-[4.5rem] flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b px-3 py-2 backdrop-blur-3xl sm:px-4 md:h-20 md:flex-nowrap md:px-10 md:py-0"
       style={{
         backgroundColor: "var(--navbar)",
         borderColor: "var(--border)",
       }}
     >
+      <div className="flex min-w-0 items-center gap-2 md:hidden">
+        <button
+          ref={menuButtonRef}
+          type="button"
+          onClick={onMenuClick}
+          aria-label="Open navigation menu"
+          aria-controls="skillforge-navigation"
+          aria-expanded={mobileMenuOpen}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-400"
+          style={{ color: "var(--text)" }}
+        >
+          <Menu size={22} aria-hidden="true" />
+        </button>
+        <BrandMark className="h-9 w-9 shrink-0" />
+      </div>
+
       {/* Search Button */}
       <div className="hidden max-w-md flex-1 md:block">
         <button
@@ -86,10 +104,10 @@ const Navbar = () => {
       </div>
 
       {/* User Stats & Actions */}
-      <div className="flex items-center gap-10">
+      <div className="flex min-w-0 items-center gap-1 sm:gap-3 md:gap-10">
         {/* Streak */}
         <div
-          className="group flex cursor-help items-center gap-3 rounded-2xl px-4 py-2 transition-all hover:opacity-80"
+          className="group flex min-h-11 shrink-0 cursor-help items-center gap-1 rounded-xl px-2 py-2 transition-all hover:opacity-80 sm:gap-2 sm:px-3 md:gap-3 md:rounded-2xl md:px-4"
           title="Your Daily Ritual Streak"
         >
           <Flame
@@ -110,13 +128,13 @@ const Navbar = () => {
 
         {/* Level + XP Bar */}
         <div
-          className="flex min-w-[200px] flex-col items-start gap-2 rounded-2xl px-4 py-2 shadow-inner"
+          className="flex min-w-0 shrink items-center gap-2 rounded-xl px-2 py-2 shadow-inner sm:px-3 md:min-w-[200px] md:flex-col md:items-start md:gap-2 md:rounded-2xl md:px-4"
           style={{
             backgroundColor: "var(--accent-light)",
             border: "1px solid var(--border)",
           }}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 md:gap-2">
             <Zap
               size={16}
               className="animate-pulse"
@@ -134,7 +152,7 @@ const Navbar = () => {
           </div>
 
           <div
-            className="h-2 w-full overflow-hidden rounded-full"
+            className="hidden h-2 w-full overflow-hidden rounded-full md:block"
             style={{
               backgroundColor: "var(--surface)",
             }}
@@ -157,7 +175,7 @@ const Navbar = () => {
           </div>
 
           <span
-            className="text-[10px] font-black"
+            className="hidden text-[10px] font-black md:inline"
             style={{
               color: "var(--text-secondary)",
             }}
@@ -172,7 +190,7 @@ const Navbar = () => {
           <button
             type="button"
             onClick={toggleNotifications}
-            className="group relative rounded-2xl p-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            className="group relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-primary-500/30 md:rounded-2xl"
             style={{
               color: "var(--text-secondary)",
             }}
@@ -219,7 +237,7 @@ const Navbar = () => {
           <button
             type="button"
             onClick={toggleProfileDropdown}
-            className="group flex cursor-pointer items-center gap-4 border-l pl-6 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            className="group flex min-h-11 shrink-0 cursor-pointer items-center gap-2 border-l pl-2 focus:outline-none focus:ring-2 focus:ring-primary-500/30 sm:gap-3 sm:pl-3 md:gap-4 md:pl-6"
             style={{
               borderColor: "var(--border)",
             }}

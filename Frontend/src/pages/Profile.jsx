@@ -233,7 +233,7 @@ const Profile = () => {
   return (
     <div className="space-y-16 pb-24 relative">
       {/* Profile Cinematic Header */}
-      <section className="relative overflow-hidden rounded-[3.5rem] p-12 md:p-20 bg-gradient-to-br from-forge-900/60 to-forge-950/40 border border-white/5 shadow-2xl group">
+      <section className="relative overflow-hidden rounded-[3.5rem] p-5 sm:p-8 md:p-12 md:p-20 bg-gradient-to-br from-forge-900/60 to-forge-950/40 border border-white/5 shadow-2xl group">
         {/* Background Magical Elements */}
         <div
           className="absolute top-0 right-0 w-full h-full pointer-events-none overflow-hidden"
@@ -344,7 +344,7 @@ const Profile = () => {
           return (
             <GlassCard
               key={card.label}
-              className="p-8 border-white/5 bg-white/[0.01] hover:border-white/10 transition-all"
+              className="p-4 sm:p-6 md:p-8 border-white/5 bg-white/[0.01] hover:border-white/10 transition-all"
             >
               <div className="flex items-center gap-4">
                 <div
@@ -376,7 +376,7 @@ const Profile = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* Left Column: Progress */}
         <div className="lg:col-span-2 space-y-10">
-          <GlassCard className="p-10 border-white/5 bg-white/[0.01]">
+          <GlassCard className="p-5 sm:p-8 md:p-10 border-white/5 bg-white/[0.01]">
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
               <Zap
                 size={18}
@@ -443,7 +443,7 @@ const Profile = () => {
 
         {/* Right Column: Achievements */}
         <div className="space-y-10">
-          <GlassCard className="p-10 border-white/5 bg-white/[0.01]">
+          <GlassCard className="p-5 sm:p-8 md:p-10 border-white/5 bg-white/[0.01]">
             <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-10 flex items-center justify-between italic">
               Collection
             </h3>
@@ -511,7 +511,7 @@ const Profile = () => {
           </GlassCard>
 
           {/* Protocol */}
-          <GlassCard className="p-10 bg-red-500/[0.01] border-red-500/10 hover:border-red-500/20 transition-colors duration-1000">
+          <GlassCard className="p-5 sm:p-8 md:p-10 bg-red-500/[0.01] border-red-500/10 hover:border-red-500/20 transition-colors duration-1000">
             <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-8 italic text-center">
               Protocol
             </h3>
