@@ -75,6 +75,7 @@ function MainLayout({ children }) {
   const isAuthenticated = useAuthStore(
     (state) => state.isAuthenticated
   );
+  const user = useAuthStore((state) => state.user);
 
   const activeAmbience = Array.isArray(
     settings?.music
@@ -95,9 +96,12 @@ function MainLayout({ children }) {
 
     const initializeAuthenticatedUser =
       async () => {
+        const settingsRequest = user?.sanctuarySettings
+          ? Promise.resolve(useSanctuaryStore.getState().settings)
+          : fetchSettings();
         const [moodResult, settingsResult] = await Promise.allSettled([
           checkMoodToday(),
-          fetchSettings(),
+          settingsRequest,
         ]);
 
         if (cancelled) return;
@@ -122,6 +126,7 @@ function MainLayout({ children }) {
     };
   }, [
     isAuthenticated,
+    user?.sanctuarySettings,
     checkMoodToday,
     setShowCheckInModal,
     fetchSettings,
@@ -129,7 +134,7 @@ function MainLayout({ children }) {
   ]);
 
   return (
-    <div className="ambient-bg flex min-h-dvh w-full min-w-0 flex-col overflow-x-clip font-sans selection:bg-primary-500/30 md:h-dvh md:flex-row md:overflow-hidden">
+    <div className="ambient-bg flex min-h-dvh w-full min-w-0 flex-col font-sans selection:bg-primary-500/30 md:h-dvh md:flex-row">
       {/* Background Magical Elements */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="animate-glow-pulse absolute left-[-10%] top-[-10%] h-[40%] w-[40%] rounded-full bg-primary-500/10 blur-[120px]" />

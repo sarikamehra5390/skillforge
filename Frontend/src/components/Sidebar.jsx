@@ -97,7 +97,7 @@ const Sidebar = ({
       aria-label="Main navigation"
       className={cn(
         "fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(18rem,calc(100vw-2rem))] flex-col backdrop-blur-3xl transition-transform duration-300 ease-out md:relative md:inset-auto md:z-20 md:h-dvh md:shrink-0 md:translate-x-0 md:transition-[width] md:duration-500",
-        mobileOpen ? "translate-x-0" : "-translate-x-full",
+        mobileOpen ? "visible translate-x-0" : "invisible -translate-x-full md:visible",
         sidebarExpanded ? "md:w-80" : "md:w-24"
       )}
       style={{

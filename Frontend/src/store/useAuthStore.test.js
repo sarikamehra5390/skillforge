@@ -11,6 +11,7 @@ globalThis.localStorage = {
 
 let api;
 let apiTimeoutMs;
+let authRequestTimeoutMs;
 let useAuthStore;
 let getLoginButtonState;
 let createLoginSubmissionRunner;
@@ -20,6 +21,7 @@ before(async () => {
   const axiosClient = await import('../api/axios.js');
   api = axiosClient.default;
   apiTimeoutMs = axiosClient.API_TIMEOUT_MS;
+  authRequestTimeoutMs = axiosClient.AUTH_REQUEST_TIMEOUT_MS;
   useAuthStore = (await import('./useAuthStore.js')).default;
   ({ getLoginButtonState } = await import('../utils/loginButtonState.js'));
   ({ createLoginSubmissionRunner, getSafePostLoginRedirect } = await import('../utils/loginSubmission.js'));
@@ -57,6 +59,7 @@ test('an existing token does not put the login button into its submitted state',
 test('the API client has a finite configurable request timeout', () => {
   assert.equal(api.defaults.timeout, apiTimeoutMs);
   assert.ok(apiTimeoutMs > 0);
+  assert.ok(authRequestTimeoutMs > apiTimeoutMs);
 });
 
 test('auth restoration with an existing token is deduplicated and independent of login loading', async (t) => {
@@ -64,8 +67,9 @@ test('auth restoration with an existing token is deduplicated and independent of
   let resolveRequest;
   let calls = 0;
   const originalGet = api.get;
-  api.get = () => {
+  api.get = (_path, options) => {
     calls += 1;
+    assert.equal(options.timeout, authRequestTimeoutMs);
     return new Promise((resolve) => { resolveRequest = resolve; });
   };
   t.after(() => { api.get = originalGet; });
@@ -86,9 +90,10 @@ test('auth restoration with an existing token is deduplicated and independent of
 test('submitting a valid form activates the local spinner and successful login navigates safely', async (t) => {
   reset();
   const originalPost = api.post;
-  api.post = async (path, payload) => {
+  api.post = async (path, payload, options) => {
     assert.equal(path, '/users/login');
     assert.deepEqual(payload, { email: 'learner@example.com', password: 'secret1' });
+    assert.equal(options.timeout, authRequestTimeoutMs);
     return { data: { token: 'new-token', user: { _id: 'user-1' } } };
   };
   t.after(() => { api.post = originalPost; });
@@ -155,6 +160,24 @@ test('a network failure shows a retryable message and resets login loading', asy
   assert.equal(await submitLogin(() => useAuthStore.getState().login({ email: 'learner@example.com', password: 'secret1' })), false);
   assert.equal(submitting, false);
   assert.match(useAuthStore.getState().error, /unable to reach.*try again/i);
+  assert.equal(useAuthStore.getState().loginLoading, false);
+});
+
+test('a server error shows a retryable message and resets login loading', async (t) => {
+  reset();
+  const originalPost = api.post;
+  api.post = async () => {
+    throw Object.assign(new Error('Database details should not reach the login form'), {
+      response: { status: 500, data: { message: 'Internal error details' } },
+    });
+  };
+  t.after(() => { api.post = originalPost; });
+
+  let submitting = false;
+  const submitLogin = createLoginSubmissionRunner((value) => { submitting = value; });
+  assert.equal(await submitLogin(() => useAuthStore.getState().login({ email: 'learner@example.com', password: 'secret1' })), false);
+  assert.equal(submitting, false);
+  assert.equal(useAuthStore.getState().error, 'SkillForge is temporarily unavailable. Please try again.');
   assert.equal(useAuthStore.getState().loginLoading, false);
 });
 

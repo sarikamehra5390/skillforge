@@ -1,28 +1,36 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 
-import Dashboard from "./pages/Dashboard";
-import Skills from "./pages/Skills";
-import Sessions from "./pages/Sessions";
-import Analytics from "./pages/Analytics";
-import Achievements from "./pages/Achievements";
-import Profile from "./pages/Profile";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Friends from "./pages/Friends";
-import FriendProfile from "./pages/FriendProfile";
-import CommunityGarden from "./pages/CommunityGarden";
-import ManageAccount from "./pages/ManageAccount";
-import NotificationSettings from "./pages/NotificationSettings";
-import NotFound from "./pages/NotFound";
-
-import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import { ThemeProvider } from "./context/ThemeContext";
 import { TreeProvider } from "./context/TreeContext";
 import { MotionConfig } from "framer-motion";
 import useSanctuaryStore from "./store/useSanctuaryStore";
 import { AmbienceAudioProvider } from "./context/AmbienceAudioContext";
+
+const Register = lazy(() => import("./pages/Register"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Skills = lazy(() => import("./pages/Skills"));
+const Sessions = lazy(() => import("./pages/Sessions"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const Achievements = lazy(() => import("./pages/Achievements"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Friends = lazy(() => import("./pages/Friends"));
+const FriendProfile = lazy(() => import("./pages/FriendProfile"));
+const CommunityGarden = lazy(() => import("./pages/CommunityGarden"));
+const ManageAccount = lazy(() => import("./pages/ManageAccount"));
+const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const MainLayout = lazy(() => import("./layouts/MainLayout"));
+
+const RouteLoadingFallback = () => (
+  <div className="ambient-bg flex min-h-dvh flex-col items-center justify-center gap-4 px-6 text-center" role="status" aria-label="Loading SkillForge">
+    <img src="/brand/skillforge-fox.png" alt="" className="h-16 w-16 object-contain" />
+    <p className="text-sm font-semibold text-white/70">Preparing your sanctuary…</p>
+  </div>
+);
 
 function App() {
   const reducedMotion = useSanctuaryStore((state) => state.settings?.reducedMotion);
@@ -40,6 +48,7 @@ function App() {
             richColors
           />
 
+          <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
             {/* Public routes */}
             <Route
@@ -165,6 +174,7 @@ function App() {
               element={<NotFound />}
             />
           </Routes>
+          </Suspense>
           </MotionConfig>
           </AmbienceAudioProvider>
         </TreeProvider>

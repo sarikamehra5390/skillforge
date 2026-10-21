@@ -128,7 +128,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-forge-950 flex flex-col md:flex-row overflow-x-hidden ambient-bg">
+    <div className="min-h-dvh bg-forge-950 flex flex-col md:flex-row ambient-bg">
       {/* Left Side: Auth Form */}
       <div className="order-2 w-full md:order-1 md:w-[45%] lg:w-[42%] flex flex-col justify-center px-5 py-8 sm:px-8 md:p-12 lg:p-16 relative z-10 bg-forge-950/50 backdrop-blur-sm border-r border-white/5">
         <div className="max-w-md w-full mx-auto">

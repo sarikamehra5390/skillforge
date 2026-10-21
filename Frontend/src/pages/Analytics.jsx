@@ -505,8 +505,8 @@ const Analytics = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Weekly Practice Trends */}
         <GlassCard className="p-4 sm:p-6 md:p-8">
-          <div className="flex items-center justify-between mb-10">
-            <h3 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-3 italic">
+          <div className="mb-5 flex items-center justify-between gap-3 sm:mb-8 md:mb-10">
+            <h3 className="flex items-center gap-2 text-xs font-black italic uppercase tracking-[0.12em] text-white sm:gap-3 sm:text-sm sm:tracking-[0.3em]">
               <TrendingUp
                 size={20}
                 className="text-primary-500"
@@ -617,7 +617,7 @@ const Analytics = () => {
 
         {/* Skill Distribution */}
         <GlassCard className="p-4 sm:p-6 md:p-8">
-          <h3 className="text-sm font-black text-white uppercase tracking-[0.3em] mb-10 flex items-center gap-3 italic">
+          <h3 className="mb-5 flex items-center gap-2 text-xs font-black italic uppercase tracking-[0.12em] text-white sm:mb-8 sm:gap-3 sm:text-sm sm:tracking-[0.3em] md:mb-10">
             <Clock
               size={20}
               className="text-secondary-500"

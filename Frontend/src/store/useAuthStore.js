@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api from '../api/axios.js';
+import api, { AUTH_REQUEST_TIMEOUT_MS } from '../api/axios.js';
 import { toast } from 'sonner';
 import useSanctuaryStore from './useSanctuaryStore.js';
 
@@ -23,8 +23,12 @@ const saveStoredUser = (user) => {
 const getErrorMessage = (error, fallbackMessage) =>
   error?.code === 'ECONNABORTED' || error?.code === 'ETIMEDOUT'
     ? 'The server took too long to respond. Please try again.'
+    : error?.code === 'ERR_CANCELED'
+      ? 'The login request was cancelled. Please try again.'
     : !error?.response && error?.code
       ? 'Unable to reach the server. Check your connection and try again.'
+      : Number(error?.response?.status) >= 500
+        ? 'SkillForge is temporarily unavailable. Please try again.'
       : error?.response?.data?.message ||
         error?.message ||
         fallbackMessage;
@@ -67,6 +71,7 @@ const useAuthStore = create((set, get) => ({
 
     try {
       const response = await api.post('/users/login', credentials, {
+        timeout: AUTH_REQUEST_TIMEOUT_MS,
         skipAuthSideEffects: true,
         skipAuthHeader: true,
       });
@@ -132,7 +137,8 @@ const useAuthStore = create((set, get) => ({
     try {
       const response = await api.post(
         '/users/register',
-        userData
+        userData,
+        { timeout: AUTH_REQUEST_TIMEOUT_MS }
       );
 
       const { token, user } = response.data || {};
@@ -269,7 +275,7 @@ const useAuthStore = create((set, get) => ({
       try {
         const response = await api.get(
           '/users/profile',
-          { skipAuthSideEffects: true }
+          { timeout: AUTH_REQUEST_TIMEOUT_MS, skipAuthSideEffects: true }
         );
 
         const user = response.data;

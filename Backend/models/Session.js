@@ -48,4 +48,7 @@ const sessionSchema = new mongoose.Schema(
   }
 );
 
+// Login and profile restoration filter a user's sessions by practice date.
+sessionSchema.index({ userId: 1, completedAt: 1 });
+
 module.exports = mongoose.model("Session", sessionSchema);

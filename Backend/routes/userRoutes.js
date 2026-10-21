@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { performance } = require("node:perf_hooks");
 
 const User = require("../models/User");
 const Session = require("../models/Session");
@@ -198,6 +199,10 @@ router.post("/register", async (req, res) => {
 ========================================================= */
 
 router.post("/login", async (req, res) => {
+  const loginStartedAt = performance.now();
+  const timings = {};
+  let outcome = "invalid_request";
+
   try {
     const { email, password } = req.body;
 
@@ -220,14 +225,20 @@ router.post("/login", async (req, res) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
+    const userLookupStartedAt = performance.now();
     const user = await User.findOne({
       email: normalizedEmail,
     });
+    timings.userLookupMs = Math.round(performance.now() - userLookupStartedAt);
 
-    if (
-      !user ||
-      !(await bcrypt.compare(password, user.password))
-    ) {
+    const passwordVerificationStartedAt = performance.now();
+    const passwordMatches = user
+      ? await bcrypt.compare(password, user.password)
+      : false;
+    timings.passwordVerificationMs = Math.round(performance.now() - passwordVerificationStartedAt);
+
+    if (!passwordMatches) {
+      outcome = "invalid_credentials";
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
@@ -236,9 +247,35 @@ router.post("/login", async (req, res) => {
 
     // Login hydrates the frontend directly, so refresh streak data here too;
     // ProtectedRoute will not request /profile once this user is in auth state.
-    const sessions = await Session.find({ userId: user._id });
+    const dataLoadStartedAt = performance.now();
+    const now = new Date();
+    const sessionQueryStartedAt = performance.now();
+    const sessionsPromise = Session.find({
+      userId: user._id,
+      duration: { $gt: 0 },
+      completedAt: { $lte: now },
+    })
+      .select("completedAt duration -_id")
+      .lean()
+      .then((sessions) => {
+        timings.sessionQueryMs = Math.round(performance.now() - sessionQueryStartedAt);
+        return sessions;
+      });
+    const settingsQueryStartedAt = performance.now();
+    const settingsPromise = getSanctuarySettings(user._id).then((settings) => {
+      timings.sanctuaryQueryMs = Math.round(performance.now() - settingsQueryStartedAt);
+      return settings;
+    });
+    const [sessions, sanctuarySettings] = await Promise.all([
+      sessionsPromise,
+      settingsPromise,
+    ]);
+    timings.parallelDataLoadMs = Math.round(performance.now() - dataLoadStartedAt);
+
+    const streakCalculationStartedAt = performance.now();
     const streakState = calculateStreakState(sessions);
     const longestStreak = Math.max(user.longestStreak || 0, streakState.longestStreak);
+    timings.streakCalculationMs = Math.round(performance.now() - streakCalculationStartedAt);
     const streakUpdate = {
       $set: {
         streak: streakState.streak,
@@ -251,23 +288,31 @@ router.post("/login", async (req, res) => {
     if (!streakState.lastPracticeDate) {
       streakUpdate.$unset = { lastPracticeDate: 1 };
     }
-    await User.updateOne({ _id: user._id }, streakUpdate);
+    const lastPracticeDate = streakState.lastPracticeDate;
+    const streakChanged = user.streak !== streakState.streak ||
+      user.longestStreak !== longestStreak ||
+      String(user.lastPracticeDate || "") !== String(lastPracticeDate || "");
+    if (streakChanged) {
+      const userUpdateStartedAt = performance.now();
+      await User.updateOne({ _id: user._id }, streakUpdate);
+      timings.userUpdateMs = Math.round(performance.now() - userUpdateStartedAt);
+    }
     user.streak = streakState.streak;
     user.longestStreak = longestStreak;
-    user.lastPracticeDate = streakState.lastPracticeDate;
-
-    const sanctuarySettings =
-      await getSanctuarySettings(user._id);
+    user.lastPracticeDate = lastPracticeDate;
 
     if (!process.env.JWT_SECRET) {
       throw new Error("JWT_SECRET is not configured on server");
     }
 
+    const tokenStartedAt = performance.now();
     const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
+    timings.tokenGenerationMs = Math.round(performance.now() - tokenStartedAt);
+    outcome = "success";
 
     return res.status(200).json({
       success: true,
@@ -285,11 +330,24 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("LOGIN ERROR:", error);
+    outcome = "server_error";
+    if (process.env.NODE_ENV === "production") {
+      console.error("LOGIN ERROR:", { name: error.name, code: error.code });
+    } else {
+      console.error("LOGIN ERROR:", error);
+    }
 
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: process.env.NODE_ENV === "production"
+        ? "Login failed. Please try again."
+        : error.message,
+    });
+  } finally {
+    console.info("LOGIN TIMING:", {
+      outcome,
+      ...timings,
+      totalMs: Math.round(performance.now() - loginStartedAt),
     });
   }
 });
@@ -309,9 +367,17 @@ router.get("/profile", auth, async (req, res) => {
       });
     }
 
-    const allSessions = await Session.find({
-      userId: user._id,
-    });
+    const now = new Date();
+    const [allSessions, sanctuarySettings] = await Promise.all([
+      Session.find({
+        userId: user._id,
+        duration: { $gt: 0 },
+        completedAt: { $lte: now },
+      })
+        .select("completedAt duration -_id")
+        .lean(),
+      getSanctuarySettings(user._id),
+    ]);
 
     const streakState = calculateStreakState(allSessions);
     const longestStreak = Math.max(user.longestStreak || 0, streakState.longestStreak);
@@ -321,9 +387,6 @@ router.get("/profile", auth, async (req, res) => {
       user.lastPracticeDate = streakState.lastPracticeDate;
       await user.save();
     }
-
-    const sanctuarySettings =
-      await getSanctuarySettings(user._id);
 
     const userWithSettings = {
       ...user.toObject(),

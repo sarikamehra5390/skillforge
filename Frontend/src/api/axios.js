@@ -1,10 +1,15 @@
 import axios from 'axios';
 
-const DEFAULT_API_TIMEOUT_MS = 60000;
+const DEFAULT_API_TIMEOUT_MS = 20000;
+const DEFAULT_AUTH_TIMEOUT_MS = 75000;
 const configuredTimeout = Number(import.meta.env?.VITE_API_TIMEOUT_MS);
+const configuredAuthTimeout = Number(import.meta.env?.VITE_AUTH_TIMEOUT_MS);
 export const API_TIMEOUT_MS = Number.isFinite(configuredTimeout) && configuredTimeout > 0
   ? configuredTimeout
   : DEFAULT_API_TIMEOUT_MS;
+export const AUTH_REQUEST_TIMEOUT_MS = Number.isFinite(configuredAuthTimeout) && configuredAuthTimeout > 0
+  ? configuredAuthTimeout
+  : DEFAULT_AUTH_TIMEOUT_MS;
 
 const api = axios.create({
   baseURL: import.meta.env?.VITE_API_URL,
@@ -41,6 +46,11 @@ api.interceptors.response.use(
 
     if (error?.code === 'ECONNABORTED' || error?.code === 'ETIMEDOUT') {
       error.message = 'The server took too long to respond. Please try again.';
+      return Promise.reject(error);
+    }
+
+    if (error?.code === 'ERR_CANCELED') {
+      error.message = 'The request was cancelled. Please try again.';
       return Promise.reject(error);
     }
 

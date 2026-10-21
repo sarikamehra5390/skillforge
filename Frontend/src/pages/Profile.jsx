@@ -448,7 +448,7 @@ const Profile = () => {
               Collection
             </h3>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6">
               {Array.from({
                 length: achievementSlots,
               }).map((_, index) => {

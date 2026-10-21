@@ -25,4 +25,4 @@ npm run build
 
 ## Environment variables
 
-The frontend reads `VITE_API_URL`. The backend reads `MONGO_URI`, `JWT_SECRET`, `PORT`, `FRONTEND_URL`, and `NODE_ENV`. Keep actual `.env` files private; only the example files with placeholders belong in source control.
+The frontend reads `VITE_API_URL`, `VITE_API_TIMEOUT_MS` (default 20 seconds for regular API calls), and `VITE_AUTH_TIMEOUT_MS` (default 75 seconds for login, registration, and saved-token validation). The longer authentication timeout allows for Render's documented free-service wake-up period; it does not guarantee the service will respond successfully. Set these Vite values in the frontend deployment environment before building. The backend reads `MONGO_URI`, `JWT_SECRET`, `PORT`, `FRONTEND_URL`, and `NODE_ENV`. Keep actual `.env` files private; only the example files with placeholders belong in source control.

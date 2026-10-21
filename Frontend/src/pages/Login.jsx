@@ -46,7 +46,11 @@ const loginSchema = z.object({
 const Login = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitLogin] = useState(() => createLoginSubmissionRunner(setIsSubmitting));
+  const [slowRequestNotice, setSlowRequestNotice] = useState(false);
+  const [submitLogin] = useState(() => createLoginSubmissionRunner((value) => {
+    setIsSubmitting(value);
+    if (value) setSlowRequestNotice(false);
+  }));
   const navigate = useNavigate();
 
   const [searchParams] = useSearchParams();
@@ -56,6 +60,15 @@ const Login = () => {
   );
 
   const loginButtonState = getLoginButtonState(isSubmitting);
+
+  useEffect(() => {
+    if (!isSubmitting) {
+      return undefined;
+    }
+
+    const noticeTimer = window.setTimeout(() => setSlowRequestNotice(true), 5000);
+    return () => window.clearTimeout(noticeTimer);
+  }, [isSubmitting]);
 
   const authChecked = useAuthStore((state) => state.authChecked);
   const checkAuth = useAuthStore((state) => state.checkAuth);
@@ -101,7 +114,7 @@ const Login = () => {
 
   return (
     <div
-      className="min-h-screen flex flex-col md:flex-row overflow-x-hidden"
+      className="min-h-dvh flex flex-col md:flex-row"
       style={{
         backgroundColor: "var(--surface)",
       }}
@@ -222,6 +235,11 @@ const Login = () => {
                 </div>
               )}
             </Button>
+            {isSubmitting && slowRequestNotice && (
+              <p className="-mt-3 text-center text-xs leading-relaxed text-violet-200/75" role="status" aria-live="polite">
+                Still waiting for the server. It may take longer after a period of inactivity; if the request times out, you can safely try again.
+              </p>
+            )}
           </form>
 
           {/* Register Link */}
