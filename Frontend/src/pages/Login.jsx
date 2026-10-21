@@ -24,6 +24,10 @@ import Input from "../components/common/Input";
 import BrandMark from "../components/BrandMark";
 import LoginSanctuaryIllustration from "../components/LoginSanctuaryIllustration";
 import { getLoginButtonState } from "../utils/loginButtonState";
+import {
+  createLoginSubmissionRunner,
+  getSafePostLoginRedirect,
+} from "../utils/loginSubmission";
 
 const loginSchema = z.object({
   email: z
@@ -41,6 +45,8 @@ const loginSchema = z.object({
 
 const Login = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitLogin] = useState(() => createLoginSubmissionRunner(setIsSubmitting));
   const navigate = useNavigate();
 
   const [searchParams] = useSearchParams();
@@ -49,10 +55,7 @@ const Login = () => {
     (state) => state.login
   );
 
-  const loginLoading = useAuthStore(
-    (state) => state.loginLoading
-  );
-  const loginButtonState = getLoginButtonState(loginLoading);
+  const loginButtonState = getLoginButtonState(isSubmitting);
 
   const authChecked = useAuthStore((state) => state.authChecked);
   const checkAuth = useAuthStore((state) => state.checkAuth);
@@ -76,45 +79,25 @@ const Login = () => {
     },
   });
 
-  const onSubmit = async (formData) => {
-    try {
-      const success = await login({
-        email: formData.email.trim(),
-        password: formData.password,
-      });
+  const onSubmit = (formData) =>
+    submitLogin(async () => {
+      try {
+        const success = await login({
+          email: formData.email.trim(),
+          password: formData.password,
+        });
 
-      if (!success) {
-        return;
+        if (!success) return false;
+
+        toast.success("Welcome back to your ritual.");
+        navigate(getSafePostLoginRedirect(searchParams), { replace: true });
+        return true;
+      } catch (loginError) {
+        console.error("Login failed:", loginError);
+        toast.error("Unable to sign in right now. Please try again.");
+        return false;
       }
-
-      toast.success(
-        "Welcome back to your ritual."
-      );
-
-      const redirect =
-        searchParams.get("redirect");
-
-      const safeRedirect =
-        redirect &&
-        redirect.startsWith("/") &&
-        !redirect.startsWith("//")
-          ? redirect
-          : "/";
-
-      navigate(safeRedirect, {
-        replace: true,
-      });
-    } catch (loginError) {
-      console.error(
-        "Login failed:",
-        loginError
-      );
-
-      toast.error(
-        "Unable to sign in right now. Please try again."
-      );
-    }
-  };
+    });
 
   return (
     <div

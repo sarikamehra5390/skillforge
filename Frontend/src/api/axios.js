@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const DEFAULT_API_TIMEOUT_MS = 20000;
+const DEFAULT_API_TIMEOUT_MS = 60000;
 const configuredTimeout = Number(import.meta.env?.VITE_API_TIMEOUT_MS);
 export const API_TIMEOUT_MS = Number.isFinite(configuredTimeout) && configuredTimeout > 0
   ? configuredTimeout

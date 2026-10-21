@@ -56,6 +56,8 @@ const useAuthStore = create((set, get) => ({
   // =========================
 
   login: async (credentials) => {
+    if (get().loginLoading) return false;
+
     set({
       loginLoading: true,
       error: null,
