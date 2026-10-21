@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import api from '../api/axios';
+import api from '../api/axios.js';
 import { toast } from 'sonner';
-import useSanctuaryStore from './useSanctuaryStore';
+import useSanctuaryStore from './useSanctuaryStore.js';
 
 const getStoredUser = () => {
   try {
@@ -21,9 +21,13 @@ const saveStoredUser = (user) => {
 };
 
 const getErrorMessage = (error, fallbackMessage) =>
-  error?.response?.data?.message ||
-  error?.message ||
-  fallbackMessage;
+  error?.code === 'ECONNABORTED' || error?.code === 'ETIMEDOUT'
+    ? 'The server took too long to respond. Please try again.'
+    : !error?.response && error?.code
+      ? 'Unable to reach the server. Check your connection and try again.'
+      : error?.response?.data?.message ||
+        error?.message ||
+        fallbackMessage;
 
 const hydrateSanctuary = (user) => {
   if (user?.sanctuarySettings) {
@@ -37,11 +41,15 @@ const useAuthStore = create((set, get) => ({
   user: getStoredUser(),
   token: localStorage.getItem('token'),
   isAuthenticated: Boolean(localStorage.getItem('token')),
-  loading: Boolean(localStorage.getItem('token')),
   authChecked: !localStorage.getItem('token'),
+  authChecking: false,
+  loginLoading: false,
+  registerLoading: false,
+  profileUpdating: false,
   error: null,
 
   _checkAuthPromise: null,
+  _authRevision: 0,
 
   // =========================
   // Login
@@ -49,18 +57,28 @@ const useAuthStore = create((set, get) => ({
 
   login: async (credentials) => {
     set({
-      loading: true,
+      loginLoading: true,
       error: null,
     });
 
+    const requestRevision = get()._authRevision;
+
     try {
-      const response = await api.post('/users/login', credentials);
+      const response = await api.post('/users/login', credentials, {
+        skipAuthSideEffects: true,
+        skipAuthHeader: true,
+      });
 
       const { token, user } = response.data || {};
 
       if (!token || !user) {
         throw new Error('Invalid login response from server.');
       }
+
+      if (get()._authRevision !== requestRevision) return false;
+
+      const revision = requestRevision + 1;
+      set({ _authRevision: revision, authChecking: false });
 
       localStorage.setItem('token', token);
       saveStoredUser(user);
@@ -69,9 +87,9 @@ const useAuthStore = create((set, get) => ({
         user,
         token,
         isAuthenticated: true,
-        loading: false,
         authChecked: true,
         error: null,
+        _checkAuthPromise: null,
       });
 
       hydrateSanctuary(user);
@@ -80,6 +98,8 @@ const useAuthStore = create((set, get) => ({
 
       return true;
     } catch (error) {
+      if (get()._authRevision !== requestRevision) return false;
+
       const errMsg = getErrorMessage(
         error,
         'Login failed'
@@ -87,14 +107,13 @@ const useAuthStore = create((set, get) => ({
 
       set({
         error: errMsg,
-        loading: false,
-        isAuthenticated: false,
-        authChecked: true,
       });
 
       toast.error(errMsg);
 
       return false;
+    } finally {
+      set({ loginLoading: false });
     }
   },
 
@@ -104,7 +123,7 @@ const useAuthStore = create((set, get) => ({
 
   register: async (userData) => {
     set({
-      loading: true,
+      registerLoading: true,
       error: null,
     });
 
@@ -129,7 +148,6 @@ const useAuthStore = create((set, get) => ({
         user,
         token,
         isAuthenticated: true,
-        loading: false,
         authChecked: true,
         error: null,
       });
@@ -147,14 +165,13 @@ const useAuthStore = create((set, get) => ({
 
       set({
         error: errMsg,
-        loading: false,
-        isAuthenticated: false,
-        authChecked: true,
       });
 
       toast.error(errMsg);
 
       return false;
+    } finally {
+      set({ registerLoading: false });
     }
   },
 
@@ -163,6 +180,7 @@ const useAuthStore = create((set, get) => ({
   // =========================
 
   logout: async (redirect = true) => {
+    set({ _authRevision: get()._authRevision + 1 });
     const sanctuaryStore = useSanctuaryStore.getState();
     let saveResult = null;
 
@@ -182,8 +200,11 @@ const useAuthStore = create((set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
-      loading: false,
       authChecked: true,
+      authChecking: false,
+      loginLoading: false,
+      registerLoading: false,
+      profileUpdating: false,
       error: null,
       _checkAuthPromise: null,
     });
@@ -226,7 +247,7 @@ const useAuthStore = create((set, get) => ({
         user: null,
         token: null,
         isAuthenticated: false,
-        loading: false,
+        authChecking: false,
         authChecked: true,
         error: null,
         _checkAuthPromise: null,
@@ -236,14 +257,17 @@ const useAuthStore = create((set, get) => ({
     }
 
     set({
-      loading: true,
+      authChecking: true,
       error: null,
     });
+
+    const revision = get()._authRevision;
 
     const promise = (async () => {
       try {
         const response = await api.get(
-          '/users/profile'
+          '/users/profile',
+          { skipAuthSideEffects: true }
         );
 
         const user = response.data;
@@ -254,13 +278,17 @@ const useAuthStore = create((set, get) => ({
           );
         }
 
+        if (get()._authRevision !== revision || localStorage.getItem('token') !== token) {
+          return false;
+        }
+
         saveStoredUser(user);
 
         set({
           user,
           token,
           isAuthenticated: true,
-          loading: false,
+          authChecking: false,
           authChecked: true,
           error: null,
         });
@@ -268,31 +296,32 @@ const useAuthStore = create((set, get) => ({
         hydrateSanctuary(user);
 
         return true;
-      } catch {
-        // The Axios interceptor may already have
-        // handled an unauthorized response.
-        localStorage.removeItem('token');
-        saveStoredUser(null);
+      } catch (error) {
+        if (get()._authRevision === revision && localStorage.getItem('token') === token) {
+          if (error?.response?.status === 401) {
+            localStorage.removeItem('token');
+            saveStoredUser(null);
+            useSanctuaryStore.setState({ settings: null, loading: false });
+          }
 
-        set({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          loading: false,
-          authChecked: true,
-          error: null,
-        });
-
-        useSanctuaryStore.setState({
-          settings: null,
-          loading: false,
-        });
+          set({
+            user: error?.response?.status === 401 ? null : get().user,
+            token: error?.response?.status === 401 ? null : token,
+            isAuthenticated: false,
+            authChecking: false,
+            authChecked: true,
+            error: null,
+          });
+        }
 
         return false;
       } finally {
-        set({
-          _checkAuthPromise: null,
-        });
+        if (get()._authRevision !== revision) {
+          set({ authChecking: false });
+        }
+        if (get()._checkAuthPromise === promise) {
+          set({ _checkAuthPromise: null });
+        }
       }
     })();
 
@@ -309,7 +338,7 @@ const useAuthStore = create((set, get) => ({
 
   updateProfile: async (updates) => {
     set({
-      loading: true,
+      profileUpdating: true,
       error: null,
     });
 
@@ -331,7 +360,7 @@ const useAuthStore = create((set, get) => ({
 
       set({
         user: updatedUser,
-        loading: false,
+        profileUpdating: false,
         error: null,
       });
 
@@ -349,7 +378,7 @@ const useAuthStore = create((set, get) => ({
       );
 
       set({
-        loading: false,
+        profileUpdating: false,
         error: errMsg,
       });
 

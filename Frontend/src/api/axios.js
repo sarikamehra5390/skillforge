@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+const DEFAULT_API_TIMEOUT_MS = 20000;
+const configuredTimeout = Number(import.meta.env?.VITE_API_TIMEOUT_MS);
+export const API_TIMEOUT_MS = Number.isFinite(configuredTimeout) && configuredTimeout > 0
+  ? configuredTimeout
+  : DEFAULT_API_TIMEOUT_MS;
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env?.VITE_API_URL,
+  timeout: API_TIMEOUT_MS,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -14,7 +21,7 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
 
-    if (token) {
+    if (token && !config.skipAuthHeader) {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,9 +37,20 @@ api.interceptors.response.use(
 
   async (error) => {
     const status = error?.response?.status;
+    const skipAuthSideEffects = error?.config?.skipAuthSideEffects;
+
+    if (error?.code === 'ECONNABORTED' || error?.code === 'ETIMEDOUT') {
+      error.message = 'The server took too long to respond. Please try again.';
+      return Promise.reject(error);
+    }
+
+    if (!error.response && !error.code) {
+      error.message = 'Unable to reach the server. Check your connection and try again.';
+      return Promise.reject(error);
+    }
 
     // Handle expired/invalid authentication
-    if (status === 401 && !isLoggingOut) {
+    if (status === 401 && !skipAuthSideEffects && !isLoggingOut) {
       isLoggingOut = true;
 
       try {
@@ -77,8 +95,7 @@ api.interceptors.response.use(
 
     // Server unreachable / network error
     if (!error.response) {
-      error.message =
-        'Network error - please check your connection';
+      error.message = 'Unable to reach the server. Check your connection and try again.';
 
       return Promise.reject(error);
     }

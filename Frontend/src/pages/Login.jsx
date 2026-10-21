@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useForm } from "react-hook-form";
@@ -23,6 +23,7 @@ import Button from "../components/common/Button";
 import Input from "../components/common/Input";
 import BrandMark from "../components/BrandMark";
 import LoginSanctuaryIllustration from "../components/LoginSanctuaryIllustration";
+import { getLoginButtonState } from "../utils/loginButtonState";
 
 const loginSchema = z.object({
   email: z
@@ -48,13 +49,19 @@ const Login = () => {
     (state) => state.login
   );
 
-  const loading = useAuthStore(
-    (state) => state.loading
+  const loginLoading = useAuthStore(
+    (state) => state.loginLoading
   );
+  const loginButtonState = getLoginButtonState(loginLoading);
 
-  const error = useAuthStore(
-    (state) => state.error
-  );
+  const authChecked = useAuthStore((state) => state.authChecked);
+  const checkAuth = useAuthStore((state) => state.checkAuth);
+
+  useEffect(() => {
+    if (localStorage.getItem("token") && !authChecked) {
+      checkAuth();
+    }
+  }, [authChecked, checkAuth]);
 
   const {
     register,
@@ -77,11 +84,6 @@ const Login = () => {
       });
 
       if (!success) {
-        toast.error(
-          error ||
-            "Invalid credentials. Please try again."
-        );
-
         return;
       }
 
@@ -214,14 +216,14 @@ const Login = () => {
             <Button
               type="submit"
               className="w-full py-4 rounded-2xl text-base shadow-lg shadow-fuchsia-500/20"
-              disabled={loading}
+              disabled={loginButtonState.disabled}
             >
-              {loading ? (
+              {loginButtonState.showSpinner ? (
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
 
                   <span>
-                    Opening the forge...
+                    {loginButtonState.label}
                   </span>
                 </div>
               ) : (
@@ -232,7 +234,7 @@ const Login = () => {
                   />
 
                   <span>
-                    Enter the Forge
+                    {loginButtonState.label}
                   </span>
                 </div>
               )}

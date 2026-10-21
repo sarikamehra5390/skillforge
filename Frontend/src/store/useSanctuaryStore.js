@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { toast } from "sonner";
-import api from "../api/axios";
+import api from "../api/axios.js";
 import {
   DEFAULT_SANCTUARY_SETTINGS,
   loadSanctuaryFromStorage,
@@ -9,7 +9,7 @@ import {
   hasPendingSanctuaryChanges,
   markSanctuaryChangesPending,
   clearPendingSanctuaryChanges,
-} from "../utils/sanctuaryStorage";
+} from "../utils/sanctuaryStorage.js";
 
 const TEXT_FIELDS = [
   "displayName",

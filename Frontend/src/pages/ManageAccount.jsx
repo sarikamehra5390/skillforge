@@ -29,7 +29,7 @@ const ManageAccount = () => {
   );
 
   const loading = useAuthStore(
-    (state) => state.loading
+    (state) => state.profileUpdating
   );
 
   const [formData, setFormData] = useState({

@@ -55,7 +55,7 @@ const Register = () => {
   );
 
   const loading = useAuthStore(
-    (state) => state.loading
+    (state) => state.registerLoading
   );
 
   const {

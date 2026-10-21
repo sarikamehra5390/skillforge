@@ -6,7 +6,7 @@ const ProtectedRoute = () => {
   const {
     isAuthenticated,
     checkAuth,
-    loading,
+    authChecking,
     authChecked,
     user,
   } = useAuthStore();
@@ -18,10 +18,10 @@ const ProtectedRoute = () => {
     if (token && !authChecked) {
       checkAuth();
     }
-  }, [token, authChecked, loading, checkAuth]);
+  }, [token, authChecked, checkAuth]);
 
   // Still checking authentication
-  if (loading || (token && !authChecked)) {
+  if (authChecking || (token && !authChecked)) {
     return (
       <div className="ambient-bg flex min-h-screen flex-col items-center justify-center gap-5 px-6 text-center" role="status" aria-label="Checking your SkillForge session">
         <div className="relative flex h-24 w-24 items-center justify-center rounded-[2rem] border border-white/15 bg-white/10 shadow-2xl backdrop-blur-xl">
