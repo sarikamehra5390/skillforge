@@ -24,7 +24,6 @@ import GlassCard from "../components/common/GlassCard";
 import Button from "../components/common/Button";
 import LoadingSkeleton from "../components/common/LoadingSkeleton";
 import Badge from "../components/common/Badge";
-import Illustration from "../components/common/Illustration";
 import LivingTree from "../components/LivingTree";
 
 import { Link, useNavigate } from "react-router-dom";
@@ -329,11 +328,8 @@ const Dashboard = () => {
         {/* Background Gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-forge-900/60 via-forge-950/40 to-forge-950" />
 
-        {/* Desktop Hero */}
-        <div className="relative">
-          <div className="flex flex-col md:flex-row items-center justify-between p-8 md:p-16">
-            {/* Left: Greeting & Text */}
-            <div className="relative z-10 max-w-lg space-y-8 text-center md:text-left">
+        <div className="relative grid items-center gap-8 px-6 py-8 sm:px-10 md:grid-cols-[minmax(0,1fr)_minmax(340px,0.9fr)] md:gap-10 md:px-14 md:py-12 lg:px-16">
+          <div className="relative z-10 order-2 mx-auto max-w-lg space-y-7 text-center md:order-1 md:mx-0 md:text-left">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warm-amber/60 opacity-75" />
@@ -396,88 +392,8 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Right: Living Tree */}
-            <div className="relative z-10 mt-12 md:mt-0 flex-1 max-w-md">
-              <LivingTree
-                user={user}
-                skills={safeSkills}
-                sessions={safeSessions}
-                isWatering={isWatering}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Hero Layout */}
-        <div className="md:hidden flex flex-col items-center p-8 text-center space-y-8">
-          <div className="relative w-full max-w-xs">
-            <Illustration
-              name="growthTree"
-              className="w-full h-auto opacity-90"
-            />
-          </div>
-
-          <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warm-amber/60 opacity-75" />
-
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-warm-amber" />
-              </span>
-
-              <span className="text-[10px] font-bold tracking-[0.2em] text-warm-amber uppercase">
-                {getGreeting()}
-              </span>
-            </div>
-
-            <div className="space-y-4">
-              <h1 className="text-3xl font-bold tracking-tight text-white leading-[1.1] italic">
-                {getGreetingTitle()}
-                <br />
-
-                <span className="text-2xl">
-                  {user?.username || "Gardener"}.
-                </span>
-              </h1>
-
-              <p className="text-sm text-slate-300 font-medium leading-relaxed max-w-sm mx-auto">
-                The seeds you planted yesterday are
-                growing. Every drop of effort makes your
-                tree stronger.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 w-full">
-              <Button
-                type="button"
-                size="lg"
-                onClick={handleWaterTree}
-                className="w-full rounded-2xl px-6 py-4 shadow-xl shadow-warm-amber/20 bg-gradient-to-r from-warm-amber to-primary-400"
-              >
-                <Plus size={18} className="mr-2" />
-
-                Water Your Tree
-              </Button>
-
-              <Link
-                to="/skills"
-                className="w-full"
-              >
-                <Button
-                  type="button"
-                  size="lg"
-                  variant="outline"
-                  className="w-full rounded-2xl px-6 py-4 bg-white/5 border-white/10"
-                >
-                  <BookOpen
-                    size={18}
-                    className="mr-2"
-                  />
-
-                  Plant New Seeds
-                </Button>
-              </Link>
-            </div>
+          <div className="relative z-10 order-1 mx-auto w-full max-w-[min(100%,34rem)] md:order-2 md:max-w-none">
+            <LivingTree user={user} skills={safeSkills} sessions={safeSessions} isWatering={isWatering} />
           </div>
         </div>
 
